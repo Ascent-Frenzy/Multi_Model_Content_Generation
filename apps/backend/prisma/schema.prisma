@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────────
+
+enum Tone {
+  professional
+  casual
+  humorous
+  inspirational
+}
+
+enum AssetType {
+  clip
+  image
+  audio
+}
+
+enum ContentType {
+  carousel
+  reel
+}
+
+enum ContentStatus {
+  draft
+  script_pending
+  script_approved
+  generating
+  ready
+  published
+  failed
+}
+
+enum QueueName {
+  render
+  social
+}
+
+enum JobType {
+  carousel_render
+  reel_render
+  instagram_post
+}
+
+enum JobStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum Platform {
+  instagram
+}
+
+enum PostStatus {
+  agent_queued
+  awaiting_approval
+  approved
+  posting
+  posted
+  failed
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brandProfiles       BrandProfile[]
+  contentItems        ContentItem[]
+  scheduledPosts      ScheduledPost[]
+  instagramConnection InstagramConnection?
+}
+
+model BrandProfile {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  name           String
+  tone           Tone
+  primaryColor   String
+  secondaryColor String
+  fontFamily     String
+  logoS3Key      String?
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assets       BrandAsset[]
+  contentItems ContentItem[]
+}
+
+model BrandAsset {
+  id             String       @id @default(cuid())
+  brandProfileId String
+  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id])
+  type           AssetType
+  s3Key          String
+  filename       String
+  mimeType       String
+  durationSecs   Float?
+  sizeBytes      Int
+  createdAt      DateTime     @default(now())
+}
+
+model ContentItem {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  brandProfileId String
+  brandProfile   BrandProfile  @relation(fields: [brandProfileId], references: [id])
+  type           ContentType
+  title          String
+  topic          String
+  status         ContentStatus
+  script         String?
+  thumbnailS3Key String?
+  renderedS3Key  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  carouselDetail CarouselDetail?
+  reelDetail     ReelDetail?
+  renderJobs     RenderJob[]
+  scheduledPosts ScheduledPost[]
+}
+
+model CarouselDetail {
+  id            String      @id @default(cuid())
+  contentItemId String      @unique
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id])
+  slideCount    Int
+  slides        Json
+}
+
+model ReelDetail {
+  id             String      @id @default(cuid())
+  contentItemId  String      @unique
+  contentItem    ContentItem @relation(fields: [contentItemId], references: [id])
+  voiceoverS3Key String?
+  durationSecs   Float?
+  segments       Json
+}
+
+model RenderJob {
+  id            String      @id @default(cuid())
+  contentItemId String
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id])
+  queue         QueueName
+  jobType       JobType
+  bullMqJobId   String?
+  status        JobStatus
+  progress      Int         @default(0)
+  error         String?
+  createdAt     DateTime    @default(now())
+  completedAt   DateTime?
+}
+
+model ScheduledPost {
+  id              String      @id @default(cuid())
+  contentItemId   String
+  contentItem     ContentItem @relation(fields: [contentItemId], references: [id])
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  platform        Platform
+  scheduledAt     DateTime
+  status          PostStatus
+  caption         String?
+  agentReasoning  String?
+  postedAt        DateTime?
+  instagramPostId String?
+  createdAt       DateTime    @default(now())
+}
+
+model InstagramConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  accessToken    String
+  igUserId       String
+  igUsername     String
+  tokenExpiresAt DateTime
+  scopes         String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
