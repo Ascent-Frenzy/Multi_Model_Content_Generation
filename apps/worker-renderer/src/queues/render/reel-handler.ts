@@ -123,7 +123,7 @@ export class ReelHandler {
           }
           return {
             path,
-            durationSecs: seg.endSec - seg.startSec,
+            durationSecs: seg.durationSecs,
             type,
             caption: seg.caption,
           };

@@ -11,10 +11,10 @@ const config: Config = {
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@app/types$': '<rootDir>/../../packages/types/src/index.ts',
-    '^@app/constants$': '<rootDir>/../../packages/constants/src/index.ts',
-    '^@app/dtos$': '<rootDir>/../../packages/dtos/src/index.ts',
-    '^@app/utils$': '<rootDir>/../../packages/utils/src/index.ts',
+    '^@app/types$': '<rootDir>/../../packages/types/src',
+    '^@app/constants$': '<rootDir>/../../packages/constants/src',
+    '^@app/dtos$': '<rootDir>/../../packages/dtos/src',
+    '^@app/utils$': '<rootDir>/../../packages/utils/src',
   },
 };
 

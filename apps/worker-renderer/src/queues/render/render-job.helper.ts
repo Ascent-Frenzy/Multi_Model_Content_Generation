@@ -50,21 +50,36 @@ export class RenderJobHelper {
     });
   }
 
-  /** Mark the render as failed (best-effort — swallows cleanup errors). */
+  /** Mark the render as failed (best-effort — each step is independent). */
   async fail(error: Error): Promise<void> {
+    // Redis notification is best-effort; DB updates must not be skipped if it fails.
     try {
       await this.redis.emitFailed(this.contentItemId, error.message);
+    } catch (redisError) {
+      this.logger.error(
+        `Redis emitFailed failed for ${this.contentItemId}: ${(redisError as Error).message}`,
+      );
+    }
+
+    try {
       await this.prisma.renderJob.updateMany({
         where: { contentItemId: this.contentItemId, jobType: this.jobType },
         data: { status: 'failed', error: error.message },
       });
+    } catch (dbError) {
+      this.logger.error(
+        `RenderJob update failed for ${this.contentItemId}: ${(dbError as Error).message}`,
+      );
+    }
+
+    try {
       await this.prisma.contentItem.update({
         where: { id: this.contentItemId },
         data: { status: 'failed' },
       });
-    } catch (cleanupError) {
+    } catch (dbError) {
       this.logger.error(
-        `Cleanup failed for ${this.contentItemId}: ${(cleanupError as Error).message}`,
+        `ContentItem update failed for ${this.contentItemId}: ${(dbError as Error).message}`,
       );
     }
   }

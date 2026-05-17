@@ -15,7 +15,6 @@
     "lint": { "inputs": ["default"] }
   },
   "plugins": [
-    { "plugin": "@nx/next/plugin", "options": { "buildTargetName": "build", "devTargetName": "serve" } },
-    { "plugin": "@nx/nest/plugin", "options": { "buildTargetName": "build", "serveTargetName": "serve" } }
+    { "plugin": "@nx/next/plugin", "options": { "buildTargetName": "build", "devTargetName": "serve" } }
   ]
 }

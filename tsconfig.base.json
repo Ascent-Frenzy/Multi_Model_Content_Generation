@@ -15,10 +15,10 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@app/types": ["packages/types/src/index.ts"],
-      "@app/dtos": ["packages/dtos/src/index.ts"],
-      "@app/constants": ["packages/constants/src/index.ts"],
-      "@app/utils": ["packages/utils/src/index.ts"]
+      "@app/types": ["packages/types/src"],
+      "@app/constants": ["packages/constants/src"],
+      "@app/dtos": ["packages/dtos/src"],
+      "@app/utils": ["packages/utils/src"]
     }
   },
   "exclude": ["node_modules", "tmp"]

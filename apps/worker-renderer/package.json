@@ -6,7 +6,7 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/apps/worker-renderer/src/main.js",
     "db:generate": "prisma generate",
     "test": "jest",
     "test:watch": "jest --watch"

@@ -105,6 +105,33 @@ describe('RenderJobHelper', () => {
       // Should not throw
       await expect(helper.fail(new Error('original'))).resolves.toBeUndefined();
     });
+
+    it('should still update DB when Redis emitFailed fails', async () => {
+      redis.emitFailed.mockRejectedValue(new Error('Redis down'));
+
+      await helper.fail(new Error('boom'));
+
+      // DB updates should still have been called despite Redis failure
+      expect(prisma.renderJob.updateMany).toHaveBeenCalledWith({
+        where: { contentItemId, jobType },
+        data: { status: 'failed', error: 'boom' },
+      });
+      expect(prisma.contentItem.update).toHaveBeenCalledWith({
+        where: { id: contentItemId },
+        data: { status: 'failed' },
+      });
+    });
+
+    it('should still update ContentItem when renderJob update fails', async () => {
+      prisma.renderJob.updateMany.mockRejectedValue(new Error('DB error'));
+
+      await helper.fail(new Error('boom'));
+
+      expect(prisma.contentItem.update).toHaveBeenCalledWith({
+        where: { id: contentItemId },
+        data: { status: 'failed' },
+      });
+    });
   });
 
   describe('run', () => {

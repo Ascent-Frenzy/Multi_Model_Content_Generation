@@ -66,24 +66,21 @@ describe('ReelHandler', () => {
         order: 0,
         type: 'clip',
         assetS3Key: 'assets/clip-0.mp4',
-        startSec: 0,
-        endSec: 5,
+        durationSecs: 5,
         caption: 'Opening scene',
       },
       {
         order: 1,
         type: 'flux_image',
         fluxPrompt: 'A beautiful sunset over mountains',
-        startSec: 5,
-        endSec: 10,
+        durationSecs: 5,
         caption: 'Sunset view',
       },
       {
         order: 2,
         type: 'static_image',
         assetS3Key: 'assets/static-2.png',
-        startSec: 10,
-        endSec: 15,
+        durationSecs: 5,
       },
     ],
     dimensions: { width: 1080, height: 1920 },
@@ -195,7 +192,7 @@ describe('ReelHandler', () => {
     );
   });
 
-  it('should compute durationSecs from endSec - startSec', async () => {
+  it('should pass durationSecs through to encoder segments', async () => {
     const job = createMockJob();
 
     await handler.handle(job);
@@ -203,9 +200,9 @@ describe('ReelHandler', () => {
     const encodeCall = reelEncoder.encode.mock.calls[0][0];
     const segments = encodeCall.segments;
 
-    expect(segments[0].durationSecs).toBe(5); // 5 - 0
-    expect(segments[1].durationSecs).toBe(5); // 10 - 5
-    expect(segments[2].durationSecs).toBe(5); // 15 - 10
+    expect(segments[0].durationSecs).toBe(5);
+    expect(segments[1].durationSecs).toBe(5);
+    expect(segments[2].durationSecs).toBe(5);
   });
 
   it('should pass caption through to encoder (not undefined)', async () => {
@@ -280,8 +277,7 @@ describe('ReelHandler', () => {
           order: 0,
           type: 'static_image',
           assetS3Key: 'assets/static-0.png',
-          startSec: 0,
-          endSec: 5,
+          durationSecs: 5,
         },
       ],
     };
