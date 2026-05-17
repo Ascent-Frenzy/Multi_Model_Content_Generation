@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import sharp from 'sharp';
-import { promises as fs } from 'fs';
 import { CarouselRenderJob } from '@app/types';
 import { JOB_TYPE } from '@app/constants';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RedisService } from '../../shared/redis/redis.service';
 import { S3Service } from '../../s3/s3.service';
 import { CarouselEncoder } from '../../ffmpeg/carousel-encoder';
+import { RenderJobHelper } from './render-job.helper';
 
 function hexToRgba(hex: string): {
   r: number;
@@ -35,8 +35,6 @@ function escapeXml(str: string): string {
 
 @Injectable()
 export class CarouselHandler {
-  private readonly logger = new Logger(CarouselHandler.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -48,22 +46,24 @@ export class CarouselHandler {
     const { contentItemId, slides, dimensions, outputFormat } = job.data;
     const { width, height } = dimensions;
 
-    const tmpDir = `/tmp/${contentItemId}`;
-    await fs.mkdir(tmpDir, { recursive: true });
+    const helper = new RenderJobHelper(
+      this.prisma,
+      this.redis,
+      contentItemId,
+      JOB_TYPE.CAROUSEL_RENDER,
+    );
 
-    try {
+    await helper.run(async () => {
       if (outputFormat !== 'mp4') {
         throw new Error(
           "outputFormat 'png[]' is not supported in worker-renderer v1",
         );
       }
 
-      // 1. Emit progress 5%
-      await this.redis.emitProgress(contentItemId, 5, 'Job started');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-        data: { status: 'processing', progress: 5 },
-      });
+      const tmpDir = helper.tmpDir;
+
+      // 1. Start
+      await helper.progress(5, 'Job started');
 
       // 2. Download assets in parallel
       const downloadPromises: Promise<void>[] = [];
@@ -85,14 +85,9 @@ export class CarouselHandler {
       }
       await Promise.all(downloadPromises);
 
-      // 3. Emit progress 20%
-      await this.redis.emitProgress(contentItemId, 20, 'Assets downloaded');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-        data: { progress: 20 },
-      });
+      await helper.progress(20, 'Assets downloaded');
 
-      // 4. Composite each slide with sharp
+      // 3. Composite each slide with sharp
       const slidePaths: string[] = [];
       for (let i = 0; i < slides.length; i++) {
         const slide = slides[i];
@@ -100,21 +95,16 @@ export class CarouselHandler {
         slidePaths.push(slidePath);
 
         // Create base image
-        let base: sharp.Sharp;
-        if (slide.bgImageS3Key) {
-          base = sharp(`${tmpDir}/bg-${i}.png`).resize(width, height, {
-            fit: 'cover',
-          });
-        } else {
-          base = sharp({
-            create: {
-              width,
-              height,
-              channels: 4,
-              background: hexToRgba(slide.bgColor),
-            },
-          });
-        }
+        const base = slide.bgImageS3Key
+          ? sharp(`${tmpDir}/bg-${i}.png`).resize(width, height, { fit: 'cover' })
+          : sharp({
+              create: {
+                width,
+                height,
+                channels: 4,
+                background: hexToRgba(slide.bgColor),
+              },
+            });
 
         // Build SVG text overlay
         const textColor = slide.textColor || '#FFFFFF';
@@ -127,11 +117,10 @@ export class CarouselHandler {
               ${escapeXml(slide.body)}
             </text>
           </svg>`;
-        const svgBuffer = Buffer.from(svgText);
 
         // Build composite layers
         const compositeInputs: sharp.OverlayOptions[] = [
-          { input: svgBuffer, top: 0, left: 0 },
+          { input: Buffer.from(svgText), top: 0, left: 0 },
         ];
 
         // Optional overlay image resized to 40% of dimensions
@@ -141,38 +130,24 @@ export class CarouselHandler {
           const overlayBuffer = await sharp(`${tmpDir}/overlay-${i}.png`)
             .resize(overlayWidth, overlayHeight, { fit: 'inside' })
             .toBuffer();
-          compositeInputs.push({
-            input: overlayBuffer,
-            gravity: 'center',
-          });
+          compositeInputs.push({ input: overlayBuffer, gravity: 'center' });
         }
 
         await base.composite(compositeInputs).png().toFile(slidePath);
       }
 
-      // 5. Emit progress 40%
-      await this.redis.emitProgress(contentItemId, 40, 'Slides composited');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-        data: { progress: 40 },
-      });
+      await helper.progress(40, 'Slides composited');
 
-      // 6. Encode carousel video
+      // 4. Encode carousel video
       const carouselOutputPath = `${tmpDir}/carousel.mp4`;
       await this.carouselEncoder.encode(slidePaths, carouselOutputPath, 3);
 
-      // 7. Emit progress 90%
-      await this.redis.emitProgress(contentItemId, 90, 'Encoding complete');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-        data: { progress: 90 },
-      });
+      await helper.progress(90, 'Encoding complete');
 
-      // 8. Upload carousel to S3
+      // 5. Upload carousel + thumbnail to S3
       const renderedS3Key = `assets/${contentItemId}/carousel.mp4`;
       await this.s3.upload(carouselOutputPath, renderedS3Key, 'video/mp4');
 
-      // 9. Generate and upload thumbnail
       const thumbnailPath = `${tmpDir}/thumbnail.jpg`;
       await sharp(slidePaths[0])
         .resize(320, 320, { fit: 'cover' })
@@ -181,43 +156,8 @@ export class CarouselHandler {
       const thumbnailS3Key = `assets/${contentItemId}/thumbnail.jpg`;
       await this.s3.upload(thumbnailPath, thumbnailS3Key, 'image/jpeg');
 
-      // 10. Emit complete event
-      await this.redis.emitComplete(contentItemId, renderedS3Key, thumbnailS3Key);
-
-      // 11. Update ContentItem
-      await this.prisma.contentItem.update({
-        where: { id: contentItemId },
-        data: {
-          renderedS3Key,
-          thumbnailS3Key,
-          status: 'ready',
-        },
-      });
-
-      // 12. Update RenderJob
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-        data: { status: 'completed', progress: 100, completedAt: new Date() },
-      });
-    } catch (error) {
-      try {
-        await this.redis.emitFailed(contentItemId, error.message);
-        await this.prisma.renderJob.updateMany({
-          where: { contentItemId, jobType: JOB_TYPE.CAROUSEL_RENDER },
-          data: { status: 'failed', error: error.message },
-        });
-        await this.prisma.contentItem.update({
-          where: { id: contentItemId },
-          data: { status: 'failed' },
-        });
-      } catch (cleanupError) {
-        this.logger.error(
-          `Cleanup failed for ${contentItemId}: ${cleanupError.message}`,
-        );
-      }
-      throw error;
-    } finally {
-      await fs.rm(tmpDir, { recursive: true, force: true });
-    }
+      // 6. Complete
+      await helper.complete(renderedS3Key, thumbnailS3Key);
+    });
   }
 }

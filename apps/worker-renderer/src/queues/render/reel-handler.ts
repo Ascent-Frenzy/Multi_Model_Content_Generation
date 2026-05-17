@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Job } from 'bullmq';
 import sharp from 'sharp';
 import axios from 'axios';
@@ -12,11 +12,10 @@ import { FluxService } from '../../flux/flux.service';
 import { ElevenLabsService } from '../../elevenlabs/elevenlabs.service';
 import { ReelEncoder } from '../../ffmpeg/reel-encoder';
 import { FfmpegService } from '../../ffmpeg/ffmpeg.service';
+import { RenderJobHelper } from './render-job.helper';
 
 @Injectable()
 export class ReelHandler {
-  private readonly logger = new Logger(ReelHandler.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -31,93 +30,82 @@ export class ReelHandler {
     const { contentItemId, script, voiceId, segments, dimensions } = job.data;
     const { width, height } = dimensions;
 
-    const tmpDir = `/tmp/${contentItemId}`;
-    await fs.mkdir(tmpDir, { recursive: true });
+    const helper = new RenderJobHelper(
+      this.prisma,
+      this.redis,
+      contentItemId,
+      JOB_TYPE.REEL_RENDER,
+    );
 
-    try {
-      // 1. Emit progress 5%
-      await this.redis.emitProgress(contentItemId, 5, 'Job started');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.REEL_RENDER },
-        data: { status: 'processing', progress: 5 },
-      });
+    await helper.run(async () => {
+      const tmpDir = helper.tmpDir;
+
+      // 1. Start
+      await helper.progress(5, 'Job started');
 
       // 2. Parallel phase: voiceover + flux images + existing asset downloads
       const voiceoverPath = `${tmpDir}/voiceover.mp3`;
 
-      const generateVoiceover = async (): Promise<void> => {
-        const buffer = await this.elevenLabsService.generateSpeech(
-          script,
-          voiceId,
-        );
-        await fs.writeFile(voiceoverPath, buffer);
-        await this.s3.upload(
-          voiceoverPath,
-          `assets/${contentItemId}/voiceover.mp3`,
-          'audio/mpeg',
-        );
-        await this.redis.emitProgress(
-          contentItemId,
-          40,
-          'Voiceover generated',
-        );
-      };
-
-      const generateFluxImages = async (): Promise<void> => {
-        for (const seg of segments) {
-          if (seg.type === 'flux_image' && seg.fluxPrompt) {
-            const imageUrl = await this.fluxService.generateImage(
-              seg.fluxPrompt,
-              width,
-              height,
-            );
-            const response = await axios.get(imageUrl, {
-              responseType: 'arraybuffer',
-            });
-            const localPath = `${tmpDir}/flux-${seg.order}.png`;
-            await fs.writeFile(localPath, response.data);
-            await this.s3.upload(
-              localPath,
-              `assets/${contentItemId}/flux-${seg.order}.png`,
-              'image/png',
-            );
-          }
-        }
-      };
-
-      const downloadExistingAssets = async (): Promise<void> => {
-        const downloadPromises: Promise<void>[] = [];
-        for (const seg of segments) {
-          if (
-            (seg.type === 'clip' || seg.type === 'static_image') &&
-            seg.assetS3Key
-          ) {
-            const ext = seg.type === 'clip' ? 'mp4' : 'png';
-            downloadPromises.push(
-              this.s3.download(
-                seg.assetS3Key,
-                `${tmpDir}/segment-${seg.order}.${ext}`,
-              ),
-            );
-          }
-        }
-        await Promise.all(downloadPromises);
-      };
-
       await Promise.all([
-        generateVoiceover(),
-        generateFluxImages(),
-        downloadExistingAssets(),
+        // Generate voiceover
+        (async () => {
+          const buffer = await this.elevenLabsService.generateSpeech(script, voiceId);
+          await fs.writeFile(voiceoverPath, buffer);
+          await this.s3.upload(
+            voiceoverPath,
+            `assets/${contentItemId}/voiceover.mp3`,
+            'audio/mpeg',
+          );
+          await this.redis.emitProgress(contentItemId, 40, 'Voiceover generated');
+        })(),
+
+        // Generate Flux images
+        (async () => {
+          for (const seg of segments) {
+            if (seg.type === 'flux_image' && seg.fluxPrompt) {
+              const imageUrl = await this.fluxService.generateImage(
+                seg.fluxPrompt,
+                width,
+                height,
+              );
+              const response = await axios.get(imageUrl, {
+                responseType: 'arraybuffer',
+              });
+              const localPath = `${tmpDir}/flux-${seg.order}.png`;
+              await fs.writeFile(localPath, response.data);
+              await this.s3.upload(
+                localPath,
+                `assets/${contentItemId}/flux-${seg.order}.png`,
+                'image/png',
+              );
+            }
+          }
+        })(),
+
+        // Download existing assets
+        (async () => {
+          const downloads: Promise<void>[] = [];
+          for (const seg of segments) {
+            if (
+              (seg.type === 'clip' || seg.type === 'static_image') &&
+              seg.assetS3Key
+            ) {
+              const ext = seg.type === 'clip' ? 'mp4' : 'png';
+              downloads.push(
+                this.s3.download(
+                  seg.assetS3Key,
+                  `${tmpDir}/segment-${seg.order}.${ext}`,
+                ),
+              );
+            }
+          }
+          await Promise.all(downloads);
+        })(),
       ]);
 
-      // 3. Emit progress 70%
-      await this.redis.emitProgress(
-        contentItemId,
-        70,
-        'All assets generated and downloaded',
-      );
+      await helper.progress(70, 'All assets generated and downloaded');
 
-      // 4. Build encoder segment list
+      // 3. Build encoder segment list
       const encoderSegments = segments
         .sort((a, b) => a.order - b.order)
         .map((seg) => {
@@ -133,11 +121,15 @@ export class ReelHandler {
             path = `${tmpDir}/segment-${seg.order}.png`;
             type = 'image';
           }
-          const durationSecs = seg.endSec - seg.startSec;
-          return { path, durationSecs, type, caption: seg.caption };
+          return {
+            path,
+            durationSecs: seg.endSec - seg.startSec,
+            type,
+            caption: seg.caption,
+          };
         });
 
-      // 5. Encode reel
+      // 4. Encode reel
       const reelOutputPath = `${tmpDir}/reel.mp4`;
       await this.reelEncoder.encode({
         segments: encoderSegments,
@@ -147,18 +139,13 @@ export class ReelHandler {
         height,
       });
 
-      // 6. Emit progress 90%
-      await this.redis.emitProgress(contentItemId, 90, 'Encoding complete');
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.REEL_RENDER },
-        data: { progress: 90 },
-      });
+      await helper.progress(90, 'Encoding complete');
 
-      // 7. Upload reel to S3
+      // 5. Upload reel to S3
       const renderedS3Key = `assets/${contentItemId}/reel.mp4`;
       await this.s3.upload(reelOutputPath, renderedS3Key, 'video/mp4');
 
-      // 8. Generate thumbnail
+      // 6. Generate + upload thumbnail
       const thumbnailPath = `${tmpDir}/thumbnail.jpg`;
       const firstSeg = encoderSegments[0];
       if (firstSeg.type === 'video') {
@@ -174,52 +161,11 @@ export class ReelHandler {
           .jpeg()
           .toFile(thumbnailPath);
       }
-
-      // 9. Upload thumbnail
       const thumbnailS3Key = `assets/${contentItemId}/thumbnail.jpg`;
       await this.s3.upload(thumbnailPath, thumbnailS3Key, 'image/jpeg');
 
-      // 10. Emit complete event
-      await this.redis.emitComplete(
-        contentItemId,
-        renderedS3Key,
-        thumbnailS3Key,
-      );
-
-      // 11. Update ContentItem
-      await this.prisma.contentItem.update({
-        where: { id: contentItemId },
-        data: {
-          renderedS3Key,
-          thumbnailS3Key,
-          status: 'ready',
-        },
-      });
-
-      // 12. Update RenderJob
-      await this.prisma.renderJob.updateMany({
-        where: { contentItemId, jobType: JOB_TYPE.REEL_RENDER },
-        data: { status: 'completed', progress: 100, completedAt: new Date() },
-      });
-    } catch (error) {
-      try {
-        await this.redis.emitFailed(contentItemId, error.message);
-        await this.prisma.renderJob.updateMany({
-          where: { contentItemId, jobType: JOB_TYPE.REEL_RENDER },
-          data: { status: 'failed', error: error.message },
-        });
-        await this.prisma.contentItem.update({
-          where: { id: contentItemId },
-          data: { status: 'failed' },
-        });
-      } catch (cleanupError) {
-        this.logger.error(
-          `Cleanup failed for ${contentItemId}: ${cleanupError.message}`,
-        );
-      }
-      throw error;
-    } finally {
-      await fs.rm(tmpDir, { recursive: true, force: true });
-    }
+      // 7. Complete
+      await helper.complete(renderedS3Key, thumbnailS3Key);
+    });
   }
 }

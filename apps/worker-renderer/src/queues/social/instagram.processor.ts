@@ -38,22 +38,19 @@ export class InstagramProcessor extends WorkerHost {
     await fs.mkdir(tmpDir, { recursive: true });
 
     try {
-      // 1. Update ScheduledPost status to 'posting'
       await this.prisma.scheduledPost.update({
         where: { id: scheduledPostId },
         data: { status: 'posting' },
       });
 
-      // 2. Download rendered asset from S3
+      // Download rendered asset from S3
       const ext = renderedS3Key.endsWith('.mp4') ? 'mp4' : 'jpg';
-      const localPath = `${tmpDir}/asset.${ext}`;
-      await this.s3.download(renderedS3Key, localPath);
+      await this.s3.download(renderedS3Key, `${tmpDir}/asset.${ext}`);
 
-      // 3. Get presigned URL for Instagram (Instagram needs a publicly accessible URL)
+      // Publish via presigned URL (Instagram needs a publicly accessible URL)
       const mediaUrl = await this.s3.getPresignedUrl(renderedS3Key, 3600);
       const mediaType: 'VIDEO' | 'IMAGE' = ext === 'mp4' ? 'VIDEO' : 'IMAGE';
 
-      // 4. Publish to Instagram
       const igId = await this.instagram.publish({
         igUserId,
         accessToken,
@@ -62,20 +59,18 @@ export class InstagramProcessor extends WorkerHost {
         mediaType,
       });
 
-      // 5. Update ScheduledPost
       await this.prisma.scheduledPost.update({
         where: { id: scheduledPostId },
         data: { status: 'posted', instagramPostId: igId, postedAt: new Date() },
       });
-
-      // 6. Update ContentItem
       await this.prisma.contentItem.update({
         where: { id: contentItemId },
         data: { status: 'published' },
       });
     } catch (error) {
-      const maxAttempts = job.opts.attempts || 3;
-      if (job.attemptsMade >= maxAttempts - 1) {
+      const isLastAttempt =
+        job.attemptsMade >= (job.opts.attempts || 3) - 1;
+      if (isLastAttempt) {
         try {
           await this.prisma.scheduledPost.update({
             where: { id: scheduledPostId },
