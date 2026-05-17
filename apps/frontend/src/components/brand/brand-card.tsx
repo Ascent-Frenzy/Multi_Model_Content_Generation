@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { BrandProfile } from '@/lib/api/brands';
-import { cn } from '@/lib/utils';
+import { cn, assetUrl } from '@/lib/utils';
 
 export function BrandCard({ brand }: { brand: BrandProfile }) {
   return (
@@ -51,7 +51,7 @@ export function BrandCard({ brand }: { brand: BrandProfile }) {
         {brand.logoS3Key && (
           <div className="mt-3">
             <img
-              src={brand.logoS3Key}
+              src={assetUrl(brand.logoS3Key)}
               alt={`${brand.name} logo`}
               className="h-8 w-auto object-contain rounded"
               loading="lazy"

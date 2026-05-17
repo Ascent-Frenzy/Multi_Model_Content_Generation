@@ -67,7 +67,7 @@ export function ScheduleList() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-40 rounded-lg bg-[#2d2d2d] animate-pulse"
+            className="h-40 rounded-lg bg-surface-slate animate-pulse"
           />
         ))}
       </div>
@@ -77,7 +77,7 @@ export function ScheduleList() {
   if (!posts || posts.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-[#949494] text-[15px]">
+        <p className="text-secondary-text text-[15px]">
           No upcoming posts. The AI agent will schedule posts when content is
           ready.
         </p>
@@ -92,7 +92,7 @@ export function ScheduleList() {
       {dateKeys.map((dateKey) => (
         <div key={dateKey}>
           <h3
-            className="font-mono text-[12px] uppercase text-[#949494] tracking-[1.5px] mb-4"
+            className="font-mono text-[12px] uppercase text-secondary-text tracking-[1.5px] mb-4"
           >
             {dateKey}
           </h3>
@@ -104,6 +104,9 @@ export function ScheduleList() {
                 onApprove={handleApprove}
                 onReschedule={handleReschedule}
                 onCancel={handleCancel}
+                isApproving={approveMutation.isPending}
+                isRescheduling={rescheduleMutation.isPending}
+                isCancelling={cancelMutation.isPending}
               />
             ))}
           </div>

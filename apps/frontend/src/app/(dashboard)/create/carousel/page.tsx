@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUIStore } from '@/lib/store/ui';
 import { useBrands, useCreateCarousel, useApproveEditedContent } from '@/lib/api/hooks';
 import type { CarouselSlide } from '@app/types';
 import type { ContentItem } from '@/lib/api/content';
@@ -18,10 +17,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Sparkles, CheckCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function CreateCarouselPage() {
   const router = useRouter();
-  const { wizardStep, setWizardStep } = useUIStore();
+  const [wizardStep, setWizardStep] = useState(1);
   const { data: brands, isLoading: brandsLoading } = useBrands();
   const createCarousel = useCreateCarousel();
   const { approve, isPending: isApproving } = useApproveEditedContent();
@@ -30,13 +30,6 @@ export default function CreateCarouselPage() {
   const [brandProfileId, setBrandProfileId] = useState('');
   const [contentItem, setContentItem] = useState<ContentItem | null>(null);
   const [editedSlides, setEditedSlides] = useState<CarouselSlide[]>([]);
-
-  // Reset wizard step on unmount
-  useEffect(() => {
-    return () => {
-      setWizardStep(1);
-    };
-  }, [setWizardStep]);
 
   const handleGenerate = () => {
     createCarousel.mutate(
@@ -135,7 +128,7 @@ export default function CreateCarouselPage() {
 
           {createCarousel.isError && (
             <p className="text-sm text-ultraviolet">
-              {(createCarousel.error as any)?.response?.data?.message || 'Failed to generate carousel'}
+              {getErrorMessage(createCarousel.error, 'Failed to generate carousel')}
             </p>
           )}
         </div>
@@ -228,7 +221,7 @@ export default function CreateCarouselPage() {
             ) : (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Approve &amp; Render
+                Approve & Render
               </>
             )}
           </Button>

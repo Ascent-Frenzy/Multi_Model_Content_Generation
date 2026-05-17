@@ -7,7 +7,7 @@ export default function SchedulePage() {
     <div>
       <div className="mb-8">
         <h1 className="font-sans text-[24px] font-bold">Agent Schedule</h1>
-        <p className="text-[#949494] mt-1">
+        <p className="text-secondary-text mt-1">
           AI-scheduled posts awaiting your approval
         </p>
       </div>

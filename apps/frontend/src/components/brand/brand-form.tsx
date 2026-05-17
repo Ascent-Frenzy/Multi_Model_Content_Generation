@@ -15,6 +15,7 @@ import { useUploadAsset } from '@/lib/api/hooks';
 import type { BrandProfile, UpdateBrandInput } from '@/lib/api/brands';
 import type { Tone } from '@app/types';
 import { Upload } from 'lucide-react';
+import { assetUrl } from '@/lib/utils';
 
 interface BrandFormProps {
   brand?: BrandProfile;
@@ -166,7 +167,7 @@ export function BrandForm({ brand, onSubmit, isLoading, brandId }: BrandFormProp
           {logoS3Key && (
             <div className="mb-2">
               <img
-                src={logoS3Key}
+                src={assetUrl(logoS3Key)}
                 alt="Brand logo"
                 className="h-16 w-auto object-contain rounded border border-white/10 p-1"
               />

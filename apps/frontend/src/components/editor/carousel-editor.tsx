@@ -43,6 +43,7 @@ export function CarouselEditor({ slides, contentId }: CarouselEditorProps) {
           <button
             key={index}
             onClick={() => setActiveIndex(index)}
+            aria-label={`Go to slide ${index + 1}`}
             className={cn(
               'h-10 w-10 rounded-lg font-mono text-sm font-bold transition-colors',
               activeIndex === index

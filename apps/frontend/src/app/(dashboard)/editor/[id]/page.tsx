@@ -1,6 +1,5 @@
 'use client';
 
-import { use } from 'react';
 import Link from 'next/link';
 import { useContentItem } from '@/lib/api/hooks';
 import { CarouselEditor } from '@/components/editor/carousel-editor';
@@ -11,9 +10,9 @@ import { ArrowLeft } from 'lucide-react';
 export default function EditorPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const { data: contentItem, isLoading, isError } = useContentItem(id);
 
   if (isLoading) {

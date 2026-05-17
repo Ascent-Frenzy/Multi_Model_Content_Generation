@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useRegister } from '@/lib/api/hooks';
+import { getErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,8 +28,7 @@ export default function RegisterPage() {
       await register.mutateAsync({ email, password });
       router.push('/');
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr.response?.data?.message || 'Registration failed');
+      setError(getErrorMessage(err, 'Registration failed'));
     }
   };
 
@@ -36,7 +36,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-canvas-black px-4">
       <Card className="w-full max-w-md bg-surface-slate border border-white/10 rounded-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-display text-white">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-sans font-bold text-white">Create Account</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

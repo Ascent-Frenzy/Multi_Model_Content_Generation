@@ -1,6 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { loginUser, registerUser } from './auth';
 import { getBrands, getBrand, createBrand, updateBrand, deleteBrand, getUploadUrl, confirmUpload, getBrandAssets, deleteBrandAsset } from './brands';
@@ -37,16 +37,19 @@ export function useDeleteBrand() {
 export function useUploadAsset() {
   const [isUploading, setIsUploading] = useState(false);
   const qc = useQueryClient();
-  const upload = async (brandId: string, file: File, type: AssetType) => {
+  const upload = useCallback(async (brandId: string, file: File, type: AssetType) => {
     setIsUploading(true);
     try {
       const { presignedUrl, s3Key } = await getUploadUrl(brandId, type, file.name);
-      await fetch(presignedUrl, { method: 'PUT', body: file });
+      const uploadRes = await fetch(presignedUrl, { method: 'PUT', body: file });
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed: ${uploadRes.status}`);
+      }
       const asset = await confirmUpload(brandId, { s3Key, filename: file.name, type, mimeType: file.type, sizeBytes: file.size });
       qc.invalidateQueries({ queryKey: ['brand-assets', brandId] });
       return asset;
     } finally { setIsUploading(false); }
-  };
+  }, [qc]);
   return { upload, isUploading };
 }
 export function useBrandAssets(brandId: string) { return useQuery({ queryKey: ['brand-assets', brandId], queryFn: () => getBrandAssets(brandId), enabled: !!brandId }); }

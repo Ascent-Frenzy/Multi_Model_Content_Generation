@@ -17,7 +17,9 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url ?? '';
+    // Only redirect on 401 from protected endpoints — let auth pages handle their own errors
+    if (error.response?.status === 401 && !url.startsWith('/auth/')) {
       useAuthStore.getState().logout();
       if (typeof window !== 'undefined') {
         window.location.href = '/login';

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUIStore } from '@/lib/store/ui';
 import { useBrands, useCreateReel, useApproveEditedContent } from '@/lib/api/hooks';
 import type { ReelSegment } from '@app/types';
 import type { ContentItem } from '@/lib/api/content';
@@ -18,10 +17,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Sparkles, CheckCircle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function CreateReelPage() {
   const router = useRouter();
-  const { wizardStep, setWizardStep } = useUIStore();
+  const [wizardStep, setWizardStep] = useState(1);
   const { data: brands, isLoading: brandsLoading } = useBrands();
   const createReel = useCreateReel();
   const { approve, isPending: isApproving } = useApproveEditedContent();
@@ -31,13 +31,6 @@ export default function CreateReelPage() {
   const [contentItem, setContentItem] = useState<ContentItem | null>(null);
   const [editedScript, setEditedScript] = useState('');
   const [editedSegments, setEditedSegments] = useState<ReelSegment[]>([]);
-
-  // Reset wizard step on unmount
-  useEffect(() => {
-    return () => {
-      setWizardStep(1);
-    };
-  }, [setWizardStep]);
 
   const handleGenerate = () => {
     createReel.mutate(
@@ -140,7 +133,7 @@ export default function CreateReelPage() {
 
           {createReel.isError && (
             <p className="text-sm text-ultraviolet">
-              {(createReel.error as any)?.response?.data?.message || 'Failed to generate reel'}
+              {getErrorMessage(createReel.error, 'Failed to generate reel')}
             </p>
           )}
         </div>
@@ -227,7 +220,7 @@ export default function CreateReelPage() {
             ) : (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Approve &amp; Render
+                Approve & Render
               </>
             )}
           </Button>

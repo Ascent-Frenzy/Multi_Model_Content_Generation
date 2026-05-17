@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useRenderProgress } from '@/lib/hooks/use-render-progress';
 import { CONTENT_STATUS } from '@app/constants';
 import type { ContentItem } from '@/lib/api/content';
-import { cn } from '@/lib/utils';
+import { cn, assetUrl } from '@/lib/utils';
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -69,7 +69,7 @@ export function ContentCard({ contentItem }: { contentItem: ContentItem }) {
         <div className="aspect-video w-full overflow-hidden">
           {contentItem.thumbnailS3Key ? (
             <img
-              src={contentItem.thumbnailS3Key}
+              src={assetUrl(contentItem.thumbnailS3Key)}
               alt={contentItem.title}
               className="h-full w-full object-cover"
               loading="lazy"

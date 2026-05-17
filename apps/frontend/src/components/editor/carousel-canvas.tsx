@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import type { CarouselSlide } from '@app/types';
-import { cn } from '@/lib/utils';
+import { cn, assetUrl } from '@/lib/utils';
 
 interface CarouselCanvasProps {
   slide: CarouselSlide;
@@ -42,12 +42,18 @@ export default function CarouselCanvas({ slide, onChange, isActive }: CarouselCa
     });
   }, []);
 
+  // IMPORTANT: This effect intentionally uses an empty dependency array.
+  // The canvas is initialised once per mount and reads `slide` from the
+  // initial props. When the parent needs to display a different slide it
+  // must remount this component by changing its `key` (e.g.
+  // `<CarouselCanvas key={activeIndex} ... />`). Do NOT add slide props
+  // to the dependency array — that would dispose & recreate the canvas on
+  // every keystroke inside the Fabric IText objects.
   useEffect(() => {
     if (!canvasRef.current) return;
 
     // Dynamic require for fabric (CJS module, only runs in browser)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fabricModule = require('fabric');
+    const fabricModule = require('fabric'); // eslint-disable-line
     const fabric = fabricModule.fabric || fabricModule;
 
     const canvas = new fabric.Canvas(canvasRef.current, {
@@ -61,7 +67,7 @@ export default function CarouselCanvas({ slide, onChange, isActive }: CarouselCa
     // Load background image if bgImageS3Key is provided
     if (slide.bgImageS3Key) {
       fabric.Image.fromURL(
-        slide.bgImageS3Key,
+        assetUrl(slide.bgImageS3Key),
         (img: any) => {
           if (!img) return;
           // Scale to fill canvas
@@ -114,7 +120,7 @@ export default function CarouselCanvas({ slide, onChange, isActive }: CarouselCa
     // Load overlay image if overlayImageS3Key is provided
     if (slide.overlayImageS3Key) {
       fabric.Image.fromURL(
-        slide.overlayImageS3Key,
+        assetUrl(slide.overlayImageS3Key),
         (img: any) => {
           if (!img) return;
           // Scale overlay to reasonable size

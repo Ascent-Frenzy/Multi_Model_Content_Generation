@@ -78,7 +78,7 @@ export function AssetUpload({ brandId }: { brandId: string }) {
       ) : (
         <>
           <Upload className="h-10 w-10 text-secondary-text mb-3" />
-          <p className="text-muted-text text-sm">Drag &amp; drop files here</p>
+          <p className="text-muted-text text-sm">Drag & drop files here</p>
           <p className="text-secondary-text text-xs mt-1">or click to browse</p>
         </>
       )}
