@@ -21,13 +21,24 @@ export interface CarouselSlide {
   textColor: string;
 }
 
+/** Persisted shape (DB JSON column) — uses absolute timeline positions. */
+export interface ReelSegmentDB {
+  order: number;
+  type: SegmentType;
+  assetS3Key?: string;
+  fluxPrompt?: string;
+  startSec: number;
+  endSec: number;
+  caption?: string;
+}
+
+/** Job-payload shape — backend converts DB rows before dispatching to BullMQ. */
 export interface ReelSegment {
   order: number;
   type: SegmentType;
   assetS3Key?: string;  // for clip or static_image
   fluxPrompt?: string;  // for flux_image
-  startSec: number;
-  endSec: number;
+  durationSecs: number;
   caption?: string;
 }
 
