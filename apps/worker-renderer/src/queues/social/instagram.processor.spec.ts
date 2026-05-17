@@ -52,7 +52,7 @@ const baseJobData: InstagramPostJob = {
   renderedS3Key: 'renders/ci-1/output.jpg',
   caption: 'Hello Instagram!',
   igUserId: 'ig-user-42',
-  accessToken: 'access-token-abc',
+  encryptedAccessToken: 'fake-iv-hex:fake-encrypted-hex',
 };
 
 function createJob(
@@ -100,6 +100,11 @@ describe('InstagramProcessor', () => {
     }).compile();
 
     processor = module.get<InstagramProcessor>(InstagramProcessor);
+
+    // Mock the private decryptToken method so we don't need real crypto
+    jest
+      .spyOn(processor as any, 'decryptToken')
+      .mockReturnValue('decrypted-access-token');
   });
 
   // ── Happy path ──────────────────────────────────────────────────────────
@@ -117,16 +122,7 @@ describe('InstagramProcessor', () => {
     expect(firstCall[0].data.status).toBe('posting');
   });
 
-  it('should call S3 download with the correct key', async () => {
-    await processor.process(createJob());
-
-    expect(mockS3.download).toHaveBeenCalledWith(
-      'renders/ci-1/output.jpg',
-      '/tmp/ci-1/asset.jpg',
-    );
-  });
-
-  it('should call getPresignedUrl (not getObjectUrl) for Instagram media URL', async () => {
+  it('should call getPresignedUrl with the correct key and expiry', async () => {
     await processor.process(createJob());
 
     expect(mockS3.getPresignedUrl).toHaveBeenCalledWith(
@@ -142,7 +138,7 @@ describe('InstagramProcessor', () => {
 
     expect(mockInstagram.publish).toHaveBeenCalledWith({
       igUserId: 'ig-user-42',
-      accessToken: 'access-token-abc',
+      accessToken: 'decrypted-access-token',
       mediaUrl: 'https://presigned.example.com/asset.jpg',
       caption: 'Hello Instagram!',
       mediaType: 'IMAGE',
@@ -158,9 +154,9 @@ describe('InstagramProcessor', () => {
 
     await processor.process(job);
 
-    expect(mockS3.download).toHaveBeenCalledWith(
+    expect(mockS3.getPresignedUrl).toHaveBeenCalledWith(
       'renders/ci-1/output.mp4',
-      '/tmp/ci-1/asset.mp4',
+      3600,
     );
     expect(mockInstagram.publish).toHaveBeenCalledWith(
       expect.objectContaining({ mediaType: 'VIDEO' }),

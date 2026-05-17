@@ -1,3 +1,4 @@
+import { ReelSegmentDB } from '@app/types';
 export declare class CreateCarouselDto {
     topic: string;
     brandProfileId: string;
@@ -23,5 +24,5 @@ export declare class UpdateContentDto {
     title?: string;
     script?: string;
     slides?: SlideUpdateDto[];
-    segments?: any[];
+    segments?: ReelSegmentDB[];
 }

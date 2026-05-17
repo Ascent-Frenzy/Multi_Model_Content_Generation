@@ -5,7 +5,7 @@ import { RENDER_QUEUE, JOB_TYPE } from '@app/constants';
 import { CarouselHandler } from './carousel-handler';
 import { ReelHandler } from './reel-handler';
 
-@Processor(RENDER_QUEUE)
+@Processor(RENDER_QUEUE, { concurrency: 1 })
 export class RenderProcessor extends WorkerHost {
   private readonly logger = new Logger(RenderProcessor.name);
 

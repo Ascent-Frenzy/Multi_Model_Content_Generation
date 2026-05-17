@@ -43,6 +43,11 @@ export class S3Service {
     });
 
     const response = await this.s3Client.send(command);
+
+    if (!response.Body) {
+      throw new Error(`S3 object body is empty for key: ${s3Key}`);
+    }
+
     const body = response.Body as Readable;
 
     return new Promise<void>((resolve, reject) => {

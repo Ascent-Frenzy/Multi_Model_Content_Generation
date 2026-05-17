@@ -16,8 +16,8 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@app/types": ["../../packages/types/src/index.ts"],
-      "@app/constants": ["../../packages/constants/src/index.ts"]
+      "@app/types": ["../../packages/types/src/index"],
+      "@app/constants": ["../../packages/constants/src/index"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

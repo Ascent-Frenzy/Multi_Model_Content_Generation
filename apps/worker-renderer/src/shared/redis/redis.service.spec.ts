@@ -26,13 +26,14 @@ describe('RedisService', () => {
   });
 
   it('should publish progress event with correct JSON to render:events channel', async () => {
-    await service.emitProgress('content-123', 50, 'compositing');
+    await service.emitProgress('user-1', 'content-123', 50, 'compositing');
 
     expect(mockPublish).toHaveBeenCalledTimes(1);
     expect(mockPublish).toHaveBeenCalledWith(
       REDIS_CHANNELS.RENDER_EVENTS,
       JSON.stringify({
         type: 'progress',
+        userId: 'user-1',
         contentItemId: 'content-123',
         progress: 50,
         stage: 'compositing',
@@ -42,6 +43,7 @@ describe('RedisService', () => {
 
   it('should publish complete event with correct JSON', async () => {
     await service.emitComplete(
+      'user-1',
       'content-456',
       'renders/output.mp4',
       'renders/thumb.png',
@@ -52,6 +54,7 @@ describe('RedisService', () => {
       REDIS_CHANNELS.RENDER_EVENTS,
       JSON.stringify({
         type: 'complete',
+        userId: 'user-1',
         contentItemId: 'content-456',
         renderedS3Key: 'renders/output.mp4',
         thumbnailS3Key: 'renders/thumb.png',
@@ -60,25 +63,27 @@ describe('RedisService', () => {
   });
 
   it('should publish complete event without optional thumbnailS3Key', async () => {
-    await service.emitComplete('content-789', 'renders/output.mp4');
+    await service.emitComplete('user-1', 'content-789', 'renders/output.mp4');
 
     expect(mockPublish).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(mockPublish.mock.calls[0][1]);
     expect(payload).toEqual({
       type: 'complete',
+      userId: 'user-1',
       contentItemId: 'content-789',
       renderedS3Key: 'renders/output.mp4',
     });
   });
 
   it('should publish failed event with correct JSON', async () => {
-    await service.emitFailed('content-err', 'FFmpeg crashed');
+    await service.emitFailed('user-1', 'content-err', 'FFmpeg crashed');
 
     expect(mockPublish).toHaveBeenCalledTimes(1);
     expect(mockPublish).toHaveBeenCalledWith(
       REDIS_CHANNELS.RENDER_EVENTS,
       JSON.stringify({
         type: 'failed',
+        userId: 'user-1',
         contentItemId: 'content-err',
         error: 'FFmpeg crashed',
       }),

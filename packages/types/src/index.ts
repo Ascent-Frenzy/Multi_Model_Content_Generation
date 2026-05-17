@@ -6,6 +6,7 @@ export type AssetType = 'clip' | 'image' | 'audio';
 export type Tone = 'professional' | 'casual' | 'humorous' | 'inspirational';
 export type Platform = 'instagram';
 export type PostStatus = 'agent_queued' | 'awaiting_approval' | 'approved' | 'posting' | 'posted' | 'failed';
+export type QueueName = 'render' | 'social';
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 export type SegmentType = 'clip' | 'flux_image' | 'static_image';
 

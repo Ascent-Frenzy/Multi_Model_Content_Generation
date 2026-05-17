@@ -45,6 +45,7 @@ describe('CarouselHandler', () => {
 
   const mockJobData: CarouselRenderJob = {
     jobType: 'carousel_render',
+    userId: 'test-user-id',
     contentItemId: 'test-content-id',
     brandProfileId: 'brand-1',
     slides: [
@@ -130,26 +131,31 @@ describe('CarouselHandler', () => {
     await handler.handle(job);
 
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       5,
       'Job started',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       20,
       'Assets downloaded',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       40,
       'Slides composited',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       90,
       'Encoding complete',
     );
     expect(redis.emitComplete).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       'assets/test-content-id/carousel.mp4',
       'assets/test-content-id/thumbnail.jpg',
@@ -208,6 +214,7 @@ describe('CarouselHandler', () => {
     await expect(handler.handle(job)).rejects.toThrow('Encoding failed');
 
     expect(redis.emitFailed).toHaveBeenCalledWith(
+      'test-user-id',
       'test-content-id',
       'Encoding failed',
     );

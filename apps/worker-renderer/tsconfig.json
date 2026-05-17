@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "rootDir": "../..",
     "outDir": "./dist",
     "declaration": true,
     "removeComments": true,
@@ -8,5 +9,5 @@
     "esModuleInterop": true,
     "strictNullChecks": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../../packages/types/src/**/*", "../../packages/constants/src/**/*", "../../packages/dtos/src/**/*"]
 }

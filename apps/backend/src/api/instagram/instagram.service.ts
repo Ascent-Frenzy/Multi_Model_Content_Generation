@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'crypto';
 
 @Injectable()
 export class InstagramService {
@@ -18,6 +18,13 @@ export class InstagramService {
   getAuthUrl(userId: string): { url: string } {
     const appId = this.config.getOrThrow<string>('INSTAGRAM_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('INSTAGRAM_REDIRECT_URI');
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+
+    const timestamp = Date.now().toString();
+    const hmac = createHmac('sha256', secret)
+      .update(`${userId}:${timestamp}`)
+      .digest('hex');
+    const state = `${userId}:${timestamp}:${hmac}`;
 
     const url =
       `https://api.instagram.com/oauth/authorize` +
@@ -25,7 +32,7 @@ export class InstagramService {
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=instagram_basic,instagram_content_publish,pages_read_engagement` +
       `&response_type=code` +
-      `&state=${userId}`;
+      `&state=${encodeURIComponent(state)}`;
 
     return { url };
   }
@@ -35,7 +42,27 @@ export class InstagramService {
     const appId = this.config.getOrThrow<string>('INSTAGRAM_APP_ID');
     const appSecret = this.config.getOrThrow<string>('INSTAGRAM_APP_SECRET');
     const redirectUri = this.config.getOrThrow<string>('INSTAGRAM_REDIRECT_URI');
-    const userId = state;
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+
+    // Verify HMAC-signed state to prevent CSRF
+    const parts = state.split(':');
+    if (parts.length !== 3) {
+      throw new BadRequestException('Invalid OAuth state');
+    }
+    const [userId, timestamp, receivedHmac] = parts;
+
+    // Reject states older than 10 minutes
+    if (Date.now() - parseInt(timestamp, 10) > 600_000) {
+      throw new BadRequestException('OAuth state expired');
+    }
+
+    const expectedHmac = createHmac('sha256', secret)
+      .update(`${userId}:${timestamp}`)
+      .digest('hex');
+
+    if (receivedHmac !== expectedHmac) {
+      throw new BadRequestException('Invalid OAuth state signature');
+    }
 
     // Exchange code for short-lived token
     const tokenResponse = await fetch(
@@ -79,6 +106,9 @@ export class InstagramService {
     const profileResponse = await fetch(
       `https://graph.instagram.com/me?fields=id,username&access_token=${longLivedData.access_token}`,
     );
+    if (!profileResponse.ok) {
+      throw new BadRequestException('Failed to fetch Instagram profile');
+    }
     const profileData = await profileResponse.json();
 
     // Encrypt the access token before storing

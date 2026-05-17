@@ -38,8 +38,8 @@ export async function updateBrand({ id, data }: { id: string; data: UpdateBrandI
 export async function deleteBrand(id: string): Promise<void> {
   await apiClient.delete(`/brands/${id}`);
 }
-export async function getUploadUrl(brandId: string, type: string, filename: string): Promise<{ presignedUrl: string; s3Key: string }> {
-  const res = await apiClient.get<{ presignedUrl: string; s3Key: string }>(`/brands/${brandId}/upload-url`, { params: { type, filename } });
+export async function getUploadUrl(brandId: string, type: string, _filename?: string): Promise<{ presignedUrl: string; s3Key: string }> {
+  const res = await apiClient.get<{ presignedUrl: string; s3Key: string }>(`/brands/${brandId}/upload-url`, { params: { type } });
   return res.data;
 }
 export async function confirmUpload(brandId: string, data: ConfirmUploadInput): Promise<BrandAsset> {

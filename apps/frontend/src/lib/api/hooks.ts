@@ -11,10 +11,10 @@ import type { AssetType } from '@app/types';
 
 // --- Auth ---
 export function useLogin() {
-  return useMutation({ mutationFn: loginUser, onSuccess: (data) => useAuthStore.getState().setAuth(data.token, data.user) });
+  return useMutation({ mutationFn: loginUser, onSuccess: (data) => useAuthStore.getState().setAuth(data.token, data.refreshToken, data.user) });
 }
 export function useRegister() {
-  return useMutation({ mutationFn: registerUser, onSuccess: (data) => useAuthStore.getState().setAuth(data.token, data.user) });
+  return useMutation({ mutationFn: registerUser, onSuccess: (data) => useAuthStore.getState().setAuth(data.token, data.refreshToken, data.user) });
 }
 
 // --- Brands ---
@@ -41,13 +41,16 @@ export function useUploadAsset() {
     setIsUploading(true);
     try {
       const { presignedUrl, s3Key } = await getUploadUrl(brandId, type, file.name);
-      const uploadRes = await fetch(presignedUrl, { method: 'PUT', body: file });
+      const uploadRes = await fetch(presignedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!uploadRes.ok) {
         throw new Error(`Upload failed: ${uploadRes.status}`);
       }
       const asset = await confirmUpload(brandId, { s3Key, filename: file.name, type, mimeType: file.type, sizeBytes: file.size });
       qc.invalidateQueries({ queryKey: ['brand-assets', brandId] });
       return asset;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw error; // Re-throw so callers can handle
     } finally { setIsUploading(false); }
   }, [qc]);
   return { upload, isUploading };

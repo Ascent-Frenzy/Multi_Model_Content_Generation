@@ -11,7 +11,14 @@
     "module": "commonjs",
     "lib": ["es2017", "dom"],
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@app/types": ["packages/types/src/index"],
+      "@app/constants": ["packages/constants/src/index"],
+      "@app/dtos": ["packages/dtos/src/index"],
+      "@app/utils": ["packages/utils/src/index"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

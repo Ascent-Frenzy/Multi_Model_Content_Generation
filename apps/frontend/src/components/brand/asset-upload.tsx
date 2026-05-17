@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, AlertCircle } from 'lucide-react';
 import { useUploadAsset } from '@/lib/api/hooks';
 import type { AssetType } from '@app/types';
 
 export function AssetUpload({ brandId }: { brandId: string }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload, isUploading } = useUploadAsset();
 
@@ -17,10 +18,15 @@ export function AssetUpload({ brandId }: { brandId: string }) {
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
+      setError(null);
       const fileArray = Array.from(files);
-      for (const file of fileArray) {
-        const type = getAssetType(file.type);
-        await upload(brandId, file, type);
+      try {
+        for (const file of fileArray) {
+          const type = getAssetType(file.type);
+          await upload(brandId, file, type);
+        }
+      } catch {
+        setError('Upload failed. Please try again.');
       }
     },
     [brandId, upload]
@@ -55,41 +61,49 @@ export function AssetUpload({ brandId }: { brandId: string }) {
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') handleClick();
-      }}
-      className="flex flex-col items-center justify-center rounded-lg p-10 text-center cursor-pointer transition-colors duration-150"
-      style={{
-        border: `1px dashed ${isDragOver ? '#3cffd0' : '#949494'}`,
-      }}
-    >
-      {isUploading ? (
-        <>
-          <Loader2 className="h-10 w-10 text-jelly-mint animate-spin mb-3" />
-          <p className="text-muted-text text-sm">Uploading...</p>
-        </>
-      ) : (
-        <>
-          <Upload className="h-10 w-10 text-secondary-text mb-3" />
-          <p className="text-muted-text text-sm">Drag & drop files here</p>
-          <p className="text-secondary-text text-xs mt-1">or click to browse</p>
-        </>
+    <div>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') handleClick();
+        }}
+        className="flex flex-col items-center justify-center rounded-lg p-10 text-center cursor-pointer transition-colors duration-150"
+        style={{
+          border: `1px dashed ${isDragOver ? '#3cffd0' : '#949494'}`,
+        }}
+      >
+        {isUploading ? (
+          <>
+            <Loader2 className="h-10 w-10 text-jelly-mint animate-spin mb-3" />
+            <p className="text-muted-text text-sm">Uploading...</p>
+          </>
+        ) : (
+          <>
+            <Upload className="h-10 w-10 text-secondary-text mb-3" />
+            <p className="text-muted-text text-sm">Drag & drop files here</p>
+            <p className="text-secondary-text text-xs mt-1">or click to browse</p>
+          </>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*,image/*"
+          multiple
+          onChange={handleChange}
+          className="hidden"
+        />
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 mt-3 text-ultraviolet">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm">{error}</p>
+        </div>
       )}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="video/*,image/*"
-        multiple
-        onChange={handleChange}
-        className="hidden"
-      />
     </div>
   );
 }

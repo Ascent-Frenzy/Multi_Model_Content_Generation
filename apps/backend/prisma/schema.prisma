@@ -104,7 +104,7 @@ model BrandProfile {
 model BrandAsset {
   id             String       @id @default(cuid())
   brandProfileId String
-  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id])
+  brandProfile   BrandProfile @relation(fields: [brandProfileId], references: [id], onDelete: Cascade)
   type           AssetType
   s3Key          String
   filename       String
@@ -119,7 +119,7 @@ model ContentItem {
   userId         String
   user           User          @relation(fields: [userId], references: [id])
   brandProfileId String
-  brandProfile   BrandProfile  @relation(fields: [brandProfileId], references: [id])
+  brandProfile   BrandProfile  @relation(fields: [brandProfileId], references: [id], onDelete: Cascade)
   type           ContentType
   title          String
   topic          String
@@ -139,7 +139,7 @@ model ContentItem {
 model CarouselDetail {
   id            String      @id @default(cuid())
   contentItemId String      @unique
-  contentItem   ContentItem @relation(fields: [contentItemId], references: [id])
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
   slideCount    Int
   slides        Json
 }
@@ -147,7 +147,7 @@ model CarouselDetail {
 model ReelDetail {
   id             String      @id @default(cuid())
   contentItemId  String      @unique
-  contentItem    ContentItem @relation(fields: [contentItemId], references: [id])
+  contentItem    ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
   voiceoverS3Key String?
   durationSecs   Float?
   segments       Json
@@ -156,10 +156,10 @@ model ReelDetail {
 model RenderJob {
   id            String      @id @default(cuid())
   contentItemId String
-  contentItem   ContentItem @relation(fields: [contentItemId], references: [id])
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
   queue         QueueName
   jobType       JobType
-  bullMqJobId   String?
+  bullMqJobId   String?     @unique
   status        JobStatus
   progress      Int         @default(0)
   error         String?
@@ -170,7 +170,7 @@ model RenderJob {
 model ScheduledPost {
   id              String      @id @default(cuid())
   contentItemId   String
-  contentItem     ContentItem @relation(fields: [contentItemId], references: [id])
+  contentItem     ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
   userId          String
   user            User        @relation(fields: [userId], references: [id])
   platform        Platform
@@ -189,7 +189,7 @@ model InstagramConnection {
   user           User     @relation(fields: [userId], references: [id])
   accessToken    String
   igUserId       String
-  igUsername     String
+  igUsername      String
   tokenExpiresAt DateTime
   scopes         String[]
   createdAt      DateTime @default(now())
