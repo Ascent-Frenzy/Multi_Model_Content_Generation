@@ -48,16 +48,16 @@ export class CarouselHandler {
     const { contentItemId, slides, dimensions, outputFormat } = job.data;
     const { width, height } = dimensions;
 
-    if (outputFormat !== 'mp4') {
-      throw new Error(
-        "outputFormat 'png[]' is not supported in worker-renderer v1",
-      );
-    }
-
     const tmpDir = `/tmp/${contentItemId}`;
     await fs.mkdir(tmpDir, { recursive: true });
 
     try {
+      if (outputFormat !== 'mp4') {
+        throw new Error(
+          "outputFormat 'png[]' is not supported in worker-renderer v1",
+        );
+      }
+
       // 1. Emit progress 5%
       await this.redis.emitProgress(contentItemId, 5, 'Job started');
       await this.prisma.renderJob.updateMany({
