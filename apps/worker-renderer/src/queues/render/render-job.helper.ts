@@ -18,6 +18,7 @@ export class RenderJobHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    private readonly userId: string,
     private readonly contentItemId: string,
     private readonly jobType: JobType,
   ) {}
@@ -28,7 +29,7 @@ export class RenderJobHelper {
 
   /** Emit a progress event over Redis and persist the percentage. */
   async progress(percent: number, stage: string): Promise<void> {
-    await this.redis.emitProgress(this.contentItemId, percent, stage);
+    await this.redis.emitProgress(this.userId, this.contentItemId, percent, stage);
     await this.prisma.renderJob.updateMany({
       where: { contentItemId: this.contentItemId, jobType: this.jobType },
       data: { ...(percent === 5 ? { status: 'processing' } : {}), progress: percent },
@@ -37,7 +38,7 @@ export class RenderJobHelper {
 
   /** Mark the render as successfully completed. */
   async complete(renderedS3Key: string, thumbnailS3Key: string): Promise<void> {
-    await this.redis.emitComplete(this.contentItemId, renderedS3Key, thumbnailS3Key);
+    await this.redis.emitComplete(this.userId, this.contentItemId, renderedS3Key, thumbnailS3Key);
 
     await this.prisma.contentItem.update({
       where: { id: this.contentItemId },
@@ -54,7 +55,7 @@ export class RenderJobHelper {
   async fail(error: Error): Promise<void> {
     // Redis notification is best-effort; DB updates must not be skipped if it fails.
     try {
-      await this.redis.emitFailed(this.contentItemId, error.message);
+      await this.redis.emitFailed(this.userId, this.contentItemId, error.message);
     } catch (redisError) {
       this.logger.error(
         `Redis emitFailed failed for ${this.contentItemId}: ${(redisError as Error).message}`,

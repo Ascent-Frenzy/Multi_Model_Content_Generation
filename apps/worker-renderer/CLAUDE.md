@@ -175,7 +175,6 @@ Emit at meaningful milestones, not every second. Suggested checkpoints:
 instagram_post job fires at scheduledAt (delayed job)
   → update ScheduledPost { status: 'posting' }
   → download rendered asset from S3 to /tmp
-  → accessToken is already plaintext in the job payload (backend decrypted it before dispatch)
   → Instagram Graph API:
       POST /{igUserId}/media { video_url (or image_url), caption }
       → returns creation_id

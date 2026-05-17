@@ -46,6 +46,7 @@ export interface ReelSegment {
 
 export interface CarouselRenderJob {
   jobType: 'carousel_render';
+  userId: string;
   contentItemId: string;
   brandProfileId: string;
   slides: CarouselSlide[];
@@ -55,6 +56,7 @@ export interface CarouselRenderJob {
 
 export interface ReelRenderJob {
   jobType: 'reel_render';
+  userId: string;
   contentItemId: string;
   brandProfileId: string;
   script: string;
@@ -70,7 +72,7 @@ export interface InstagramPostJob {
   renderedS3Key: string;
   caption: string;
   igUserId: string;
-  accessToken: string; // decrypted by backend before dispatch
+  encryptedAccessToken: string; // AES-256-CBC encrypted; worker decrypts with ENCRYPTION_KEY
 }
 
 export type RenderJobPayload = CarouselRenderJob | ReelRenderJob;
@@ -80,6 +82,7 @@ export type SocialJobPayload = InstagramPostJob;
 
 export interface RenderProgressEvent {
   type: 'progress';
+  userId: string;
   contentItemId: string;
   progress: number; // 0-100
   stage: string;
@@ -87,6 +90,7 @@ export interface RenderProgressEvent {
 
 export interface RenderCompleteEvent {
   type: 'complete';
+  userId: string;
   contentItemId: string;
   renderedS3Key: string;
   thumbnailS3Key?: string;
@@ -94,6 +98,7 @@ export interface RenderCompleteEvent {
 
 export interface RenderFailedEvent {
   type: 'failed';
+  userId: string;
   contentItemId: string;
   error: string;
 }

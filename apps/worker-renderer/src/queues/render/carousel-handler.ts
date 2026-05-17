@@ -43,12 +43,13 @@ export class CarouselHandler {
   ) {}
 
   async handle(job: Job<CarouselRenderJob>): Promise<void> {
-    const { contentItemId, slides, dimensions, outputFormat } = job.data;
+    const { userId, contentItemId, slides, dimensions, outputFormat } = job.data;
     const { width, height } = dimensions;
 
     const helper = new RenderJobHelper(
       this.prisma,
       this.redis,
+      userId,
       contentItemId,
       JOB_TYPE.CAROUSEL_RENDER,
     );

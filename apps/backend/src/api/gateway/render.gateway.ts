@@ -69,18 +69,37 @@ export class RenderGateway
   }
 
   handleConnection(client: Socket) {
-    this.logger.debug(`Client connected: ${client.id}`);
+    // Clients must send their JWT as a query param: ?token=<jwt>
+    // We extract userId from it and join a per-user room so events
+    // are never broadcast to the wrong user.
+    const token = client.handshake.query?.token as string | undefined;
+    if (token) {
+      try {
+        const { verify } = require('jsonwebtoken');
+        const secret = process.env.JWT_SECRET;
+        const payload = verify(token, secret) as { sub: string };
+        client.join(`user:${payload.sub}`);
+        this.logger.debug(`Client ${client.id} joined room user:${payload.sub}`);
+      } catch {
+        this.logger.warn(`Client ${client.id} provided invalid token, disconnecting`);
+        client.disconnect(true);
+      }
+    } else {
+      this.logger.warn(`Client ${client.id} connected without token, disconnecting`);
+      client.disconnect(true);
+    }
   }
 
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
   }
 
-  /** Route render events to the correct Socket.io event name */
+  /** Route render events only to the owning user's room */
   private handleRenderEvent(event: RenderEvent) {
+    const room = `user:${event.userId}`;
     switch (event.type) {
       case 'progress':
-        this.server.emit('render:progress', {
+        this.server.to(room).emit('render:progress', {
           contentItemId: event.contentItemId,
           progress: event.progress,
           stage: event.stage,
@@ -88,7 +107,7 @@ export class RenderGateway
         break;
 
       case 'complete':
-        this.server.emit('render:complete', {
+        this.server.to(room).emit('render:complete', {
           contentItemId: event.contentItemId,
           renderedS3Key: event.renderedS3Key,
           thumbnailS3Key: event.thumbnailS3Key,
@@ -96,7 +115,7 @@ export class RenderGateway
         break;
 
       case 'failed':
-        this.server.emit('render:failed', {
+        this.server.to(room).emit('render:failed', {
           contentItemId: event.contentItemId,
           error: event.error,
         });
@@ -104,12 +123,13 @@ export class RenderGateway
     }
   }
 
-  /** Emit agent:scheduled event (called by AgentService) */
+  /** Emit agent:scheduled event only to the owning user */
   emitAgentScheduled(payload: {
+    userId: string;
     scheduledPostId: string;
     contentItemId: string;
     scheduledAt: string;
   }) {
-    this.server.emit('agent:scheduled', payload);
+    this.server.to(`user:${payload.userId}`).emit('agent:scheduled', payload);
   }
 }

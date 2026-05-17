@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '../shared/prisma/prisma.service';
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 
 interface SchedulingDecision {
@@ -57,7 +57,7 @@ export class AgentService {
     }
 
     // 2. Load mock engagement data
-    const engagementData = this.loadMockEngagementData();
+    const engagementData = await this.loadMockEngagementData();
 
     // 3. Call Claude for scheduling decisions
     const contentSummary = readyContent.map((item) => ({
@@ -105,11 +105,10 @@ Return ONLY valid JSON, no markdown or explanation.`,
     }
   }
 
-  /** Load mock engagement data from the data directory */
-  private loadMockEngagementData(): any {
+  private async loadMockEngagementData(): Promise<any> {
     try {
       const dataPath = path.join(process.cwd(), 'data', 'mock-engagement.json');
-      const raw = fs.readFileSync(dataPath, 'utf-8');
+      const raw = await fs.readFile(dataPath, 'utf-8');
       return JSON.parse(raw);
     } catch {
       this.logger.warn('Could not load mock engagement data, using defaults');

@@ -8,17 +8,23 @@ const fontDisplay = Anton({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-display',
+  display: 'swap',
+  preload: false,
 });
 
 const fontSans = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
+  preload: false,
 });
 
 const fontMono = Space_Mono({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-mono',
+  display: 'swap',
+  preload: false,
 });
 
 export const metadata: Metadata = {

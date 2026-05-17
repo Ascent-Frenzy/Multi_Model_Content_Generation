@@ -2,13 +2,16 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { promises as fs } from 'fs';
+import { createDecipheriv } from 'crypto';
 import { SOCIAL_QUEUE, JOB_TYPE } from '@app/constants';
 import { InstagramPostJob } from '@app/types';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { S3Service } from '../../s3/s3.service';
 import { InstagramService } from '../../instagram/instagram.service';
 
-@Processor(SOCIAL_QUEUE)
+// lockDuration must exceed the 5-min Instagram container poll window or
+// BullMQ marks the job stalled and re-queues it mid-publish.
+@Processor(SOCIAL_QUEUE, { lockDuration: 360000 })
 export class InstagramProcessor extends WorkerHost {
   private readonly logger = new Logger(InstagramProcessor.name);
 
@@ -31,8 +34,10 @@ export class InstagramProcessor extends WorkerHost {
       renderedS3Key,
       caption,
       igUserId,
-      accessToken,
+      encryptedAccessToken,
     } = job.data;
+
+    const accessToken = this.decryptToken(encryptedAccessToken);
 
     const tmpDir = `/tmp/${contentItemId}`;
     await fs.mkdir(tmpDir, { recursive: true });
@@ -43,11 +48,9 @@ export class InstagramProcessor extends WorkerHost {
         data: { status: 'posting' },
       });
 
-      // Download rendered asset from S3
+      // Use presigned URL — Instagram fetches the asset directly from S3.
+      // No local download needed.
       const ext = renderedS3Key.endsWith('.mp4') ? 'mp4' : 'jpg';
-      await this.s3.download(renderedS3Key, `${tmpDir}/asset.${ext}`);
-
-      // Publish via presigned URL (Instagram needs a publicly accessible URL)
       const mediaUrl = await this.s3.getPresignedUrl(renderedS3Key, 3600);
       const mediaType: 'VIDEO' | 'IMAGE' = ext === 'mp4' ? 'VIDEO' : 'IMAGE';
 
@@ -96,5 +99,17 @@ export class InstagramProcessor extends WorkerHost {
   @OnWorkerEvent('completed')
   onCompleted(job: Job) {
     this.logger.log(`Instagram post job ${job.id} completed`);
+  }
+
+  private decryptToken(ciphertext: string): string {
+    const encryptionKey = process.env.ENCRYPTION_KEY;
+    if (!encryptionKey) throw new Error('ENCRYPTION_KEY is not set');
+    const [ivHex, encrypted] = ciphertext.split(':');
+    const key = Buffer.from(encryptionKey, 'hex');
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
   }
 }

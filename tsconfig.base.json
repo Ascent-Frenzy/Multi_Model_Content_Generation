@@ -1,7 +1,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
@@ -12,14 +11,7 @@
     "module": "commonjs",
     "lib": ["es2017", "dom"],
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@app/types": ["packages/types/src"],
-      "@app/constants": ["packages/constants/src"],
-      "@app/dtos": ["packages/dtos/src"],
-      "@app/utils": ["packages/utils/src"]
-    }
+    "skipDefaultLibCheck": true
   },
   "exclude": ["node_modules", "tmp"]
 }

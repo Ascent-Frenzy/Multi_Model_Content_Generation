@@ -27,12 +27,13 @@ export class ReelHandler {
   ) {}
 
   async handle(job: Job<ReelRenderJob>): Promise<void> {
-    const { contentItemId, script, voiceId, segments, dimensions } = job.data;
+    const { userId, contentItemId, script, voiceId, segments, dimensions } = job.data;
     const { width, height } = dimensions;
 
     const helper = new RenderJobHelper(
       this.prisma,
       this.redis,
+      userId,
       contentItemId,
       JOB_TYPE.REEL_RENDER,
     );
@@ -56,7 +57,7 @@ export class ReelHandler {
             `assets/${contentItemId}/voiceover.mp3`,
             'audio/mpeg',
           );
-          await this.redis.emitProgress(contentItemId, 40, 'Voiceover generated');
+          await helper.progress(40, 'Voiceover generated');
         })(),
 
         // Generate Flux images

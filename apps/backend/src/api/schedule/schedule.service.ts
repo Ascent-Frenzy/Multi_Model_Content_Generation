@@ -6,17 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { RescheduleDto } from '@app/dtos';
 import { SOCIAL_QUEUE, JOB_TYPE } from '@app/constants';
-import { createDecipheriv } from 'crypto';
 
 @Injectable()
 export class ScheduleService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     @InjectQueue(SOCIAL_QUEUE) private readonly socialQueue: Queue,
   ) {}
 
@@ -54,9 +51,6 @@ export class ScheduleService {
       throw new BadRequestException('No Instagram connection found');
     }
 
-    // Decrypt access token before dispatching
-    const accessToken = this.decryptToken(igConnection.accessToken);
-
     const delay = post.scheduledAt.getTime() - Date.now();
 
     const payload = {
@@ -66,7 +60,7 @@ export class ScheduleService {
       renderedS3Key: contentItem.renderedS3Key,
       caption: post.caption || '',
       igUserId: igConnection.igUserId,
-      accessToken,
+      encryptedAccessToken: igConnection.accessToken,
     };
 
     await this.socialQueue.add(JOB_TYPE.INSTAGRAM_POST, payload, {
@@ -121,15 +115,4 @@ export class ScheduleService {
     return post;
   }
 
-  /** Decrypt an AES-256-CBC encrypted token */
-  private decryptToken(ciphertext: string): string {
-    const encryptionKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
-    const [ivHex, encrypted] = ciphertext.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const key = Buffer.from(encryptionKey, 'hex');
-    const decipher = createDecipheriv('aes-256-cbc', key, iv);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  }
 }

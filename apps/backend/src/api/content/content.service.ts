@@ -12,7 +12,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCarouselDto, CreateReelDto, UpdateContentDto } from '@app/dtos';
 import { RENDER_QUEUE, SOCIAL_QUEUE, JOB_TYPE, DIMENSIONS } from '@app/constants';
-import { CarouselSlide, ReelSegment } from '@app/types';
+import { CarouselSlide, ReelSegmentDB, ReelSegment } from '@app/types';
 
 @Injectable()
 export class ContentService {
@@ -211,7 +211,7 @@ Return ONLY valid JSON, no markdown or explanation.`,
         throw new Error('No text response from Claude');
       }
 
-      let parsed: { script: string; segments: ReelSegment[] };
+      let parsed: { script: string; segments: ReelSegmentDB[] };
       try {
         parsed = JSON.parse(textBlock.text);
       } catch {
@@ -329,6 +329,7 @@ Return ONLY valid JSON, no markdown or explanation.`,
     if (item.type === 'carousel' && item.carouselDetail) {
       const payload = {
         jobType: JOB_TYPE.CAROUSEL_RENDER,
+        userId,
         contentItemId: id,
         brandProfileId: item.brandProfileId,
         slides: item.carouselDetail.slides,
@@ -355,13 +356,24 @@ Return ONLY valid JSON, no markdown or explanation.`,
         },
       });
     } else if (item.type === 'reel' && item.reelDetail) {
+      const dbSegments = item.reelDetail.segments as unknown as ReelSegmentDB[];
+      const segments: ReelSegment[] = dbSegments.map((s) => ({
+        order: s.order,
+        type: s.type,
+        assetS3Key: s.assetS3Key,
+        fluxPrompt: s.fluxPrompt,
+        durationSecs: s.endSec - s.startSec,
+        caption: s.caption,
+      }));
+
       const payload = {
         jobType: JOB_TYPE.REEL_RENDER,
+        userId,
         contentItemId: id,
         brandProfileId: item.brandProfileId,
         script: item.script,
-        voiceId: 'default',
-        segments: item.reelDetail.segments,
+        voiceId: this.config.get<string>('ELEVENLABS_VOICE_ID') || 'JBFqnCBsd6RMkjVDRZzb',
+        segments,
         dimensions: DIMENSIONS.REEL,
       };
 

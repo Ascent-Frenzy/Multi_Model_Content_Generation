@@ -23,7 +23,7 @@ export class InstagramService {
       `https://api.instagram.com/oauth/authorize` +
       `?client_id=${appId}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=user_profile,user_media` +
+      `&scope=instagram_basic,instagram_content_publish,pages_read_engagement` +
       `&response_type=code` +
       `&state=${userId}`;
 
@@ -97,7 +97,7 @@ export class InstagramService {
         igUserId: profileData.id,
         igUsername: profileData.username,
         tokenExpiresAt,
-        scopes: ['user_profile', 'user_media'],
+        scopes: ['instagram_basic', 'instagram_content_publish', 'pages_read_engagement'],
       },
       create: {
         userId,
@@ -105,7 +105,7 @@ export class InstagramService {
         igUserId: profileData.id,
         igUsername: profileData.username,
         tokenExpiresAt,
-        scopes: ['user_profile', 'user_media'],
+        scopes: ['instagram_basic', 'instagram_content_publish', 'pages_read_engagement'],
       },
     });
 

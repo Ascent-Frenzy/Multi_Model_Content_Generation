@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const {BullModule} = require\\('@nestjs/bullmq'\\); console.log\\('ok'\\)\")",
+      "Bash(node -e \"const t = require\\('@nestjs/bullmq'\\); const k = require\\('bullmq'\\); console.log\\('WorkerOptions keys:', Object.keys\\(k.Worker.prototype\\).join\\(', '\\)\\)\")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);console.log\\(JSON.parse\\(d\\).scripts\\)\")",
+      "Bash(npx nest *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\syedf\\\\WORK\\\\Multi_Model_Content_Generation\\\\apps\\\\backend\\\\dist\" -Name)"
+    ]
+  }
+}

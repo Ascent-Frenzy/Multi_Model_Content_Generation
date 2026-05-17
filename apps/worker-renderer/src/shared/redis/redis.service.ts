@@ -15,36 +15,33 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async emitProgress(
+    userId: string,
     contentItemId: string,
     progress: number,
     stage: string,
   ): Promise<void> {
     await this.publish(
       REDIS_CHANNELS.RENDER_EVENTS,
-      JSON.stringify({ type: 'progress', contentItemId, progress, stage }),
+      JSON.stringify({ type: 'progress', userId, contentItemId, progress, stage }),
     );
   }
 
   async emitComplete(
+    userId: string,
     contentItemId: string,
     renderedS3Key: string,
     thumbnailS3Key?: string,
   ): Promise<void> {
     await this.publish(
       REDIS_CHANNELS.RENDER_EVENTS,
-      JSON.stringify({
-        type: 'complete',
-        contentItemId,
-        renderedS3Key,
-        thumbnailS3Key,
-      }),
+      JSON.stringify({ type: 'complete', userId, contentItemId, renderedS3Key, thumbnailS3Key }),
     );
   }
 
-  async emitFailed(contentItemId: string, error: string): Promise<void> {
+  async emitFailed(userId: string, contentItemId: string, error: string): Promise<void> {
     await this.publish(
       REDIS_CHANNELS.RENDER_EVENTS,
-      JSON.stringify({ type: 'failed', contentItemId, error }),
+      JSON.stringify({ type: 'failed', userId, contentItemId, error }),
     );
   }
 

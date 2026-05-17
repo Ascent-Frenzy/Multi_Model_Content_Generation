@@ -85,8 +85,9 @@ export class AgentScheduler {
           },
         });
 
-        // Emit WebSocket event
+        // Emit WebSocket event only to the owning user's room
         this.renderGateway.emitAgentScheduled({
+          userId,
           scheduledPostId: scheduledPost.id,
           contentItemId: decision.contentItemId,
           scheduledAt: scheduledPost.scheduledAt.toISOString(),
