@@ -5,6 +5,8 @@ module.exports = (options) => ({
   ...options,
   // Keep node_modules external — prevents webpack from bundling native binaries
   // (bcrypt, sharp, etc.) which break under webpack's static analysis.
+  // Workspace packages (@app/*) are explicitly allowed so they ARE bundled;
+  // their package.json "main" points to .ts which Node cannot load at runtime.
   externals: [
     nodeExternals({
       modulesDir: path.resolve(__dirname, '../../node_modules'),

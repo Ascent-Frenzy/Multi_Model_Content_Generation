@@ -5,7 +5,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Inject, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../shared/redis/redis.module';
@@ -20,11 +21,11 @@ import { RenderEvent } from '@app/types';
  * This gateway subscribes and emits the appropriate Socket.io events.
  */
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000' },
   namespace: '/',
 })
 export class RenderGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
 {
   @WebSocketServer()
   server: Server;
@@ -32,7 +33,10 @@ export class RenderGateway
   private readonly logger = new Logger(RenderGateway.name);
   private subscriber: Redis;
 
-  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
+  constructor(
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly jwtService: JwtService,
+  ) {}
 
   onModuleInit() {
     // Create a dedicated subscriber connection (ioredis requires separate
@@ -73,25 +77,30 @@ export class RenderGateway
     // We extract userId from it and join a per-user room so events
     // are never broadcast to the wrong user.
     const token = client.handshake.query?.token as string | undefined;
-    if (token) {
-      try {
-        const { verify } = require('jsonwebtoken');
-        const secret = process.env.JWT_SECRET;
-        const payload = verify(token, secret) as { sub: string };
-        client.join(`user:${payload.sub}`);
-        this.logger.debug(`Client ${client.id} joined room user:${payload.sub}`);
-      } catch {
-        this.logger.warn(`Client ${client.id} provided invalid token, disconnecting`);
-        client.disconnect(true);
-      }
-    } else {
+    if (!token) {
       this.logger.warn(`Client ${client.id} connected without token, disconnecting`);
+      client.disconnect(true);
+      return;
+    }
+    try {
+      const payload = this.jwtService.verify(token, { algorithms: ['HS256'] });
+      client.join(`user:${payload.sub}`);
+      this.logger.debug(`Client ${client.id} joined room user:${payload.sub}`);
+    } catch {
+      this.logger.warn(`Client ${client.id} provided invalid token, disconnecting`);
       client.disconnect(true);
     }
   }
 
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
+  }
+
+  async onModuleDestroy() {
+    if (this.subscriber) {
+      await this.subscriber.unsubscribe();
+      await this.subscriber.quit();
+    }
   }
 
   /** Route render events only to the owning user's room */

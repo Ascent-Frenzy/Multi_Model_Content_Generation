@@ -16,6 +16,7 @@ import {
   CreateBrandProfileDto,
   UpdateBrandProfileDto,
   ConfirmAssetDto,
+  GetUploadUrlDto,
 } from '@app/dtos';
 
 @Controller('brands')
@@ -56,9 +57,9 @@ export class BrandsController {
   getUploadUrl(
     @Req() req,
     @Param('id') id: string,
-    @Query('type') type: string,
+    @Query() query: GetUploadUrlDto,
   ) {
-    return this.brandsService.getUploadUrl(id, req.user.id, type);
+    return this.brandsService.getUploadUrl(id, req.user.id, query.type);
   }
 
   @Post(':id/assets/confirm')

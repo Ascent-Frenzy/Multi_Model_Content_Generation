@@ -44,6 +44,7 @@ export class CarouselHandler {
 
   async handle(job: Job<CarouselRenderJob>): Promise<void> {
     const { userId, contentItemId, slides, dimensions, outputFormat } = job.data;
+
     const { width, height } = dimensions;
 
     const helper = new RenderJobHelper(
@@ -55,6 +56,10 @@ export class CarouselHandler {
     );
 
     await helper.run(async () => {
+      if (!slides || slides.length === 0) {
+        throw new Error('Cannot render carousel with zero slides');
+      }
+
       if (outputFormat !== 'mp4') {
         throw new Error(
           "outputFormat 'png[]' is not supported in worker-renderer v1",

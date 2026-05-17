@@ -8,6 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ReelSegmentDB } from '@app/types';
 
 export class CreateCarouselDto {
   @IsString()
@@ -89,5 +90,5 @@ export class UpdateContentDto {
 
   @IsOptional()
   @IsArray()
-  segments?: any[];
+  segments?: ReelSegmentDB[];
 }

@@ -1,6 +1,7 @@
+import { Tone, AssetType } from '@app/types';
 export declare class CreateBrandProfileDto {
     name: string;
-    tone: string;
+    tone: Tone;
     primaryColor: string;
     secondaryColor: string;
     fontFamily: string;
@@ -9,7 +10,7 @@ export declare class CreateBrandProfileDto {
 }
 export declare class UpdateBrandProfileDto {
     name?: string;
-    tone?: string;
+    tone?: Tone;
     primaryColor?: string;
     secondaryColor?: string;
     fontFamily?: string;
@@ -17,12 +18,12 @@ export declare class UpdateBrandProfileDto {
     isDefault?: boolean;
 }
 export declare class GetUploadUrlDto {
-    type: string;
+    type: AssetType;
 }
 export declare class ConfirmAssetDto {
     s3Key: string;
     filename: string;
-    type: string;
+    type: AssetType;
     mimeType: string;
     sizeBytes: number;
     durationSecs?: number;

@@ -6,13 +6,14 @@ import {
   IsNumber,
   IsInt,
 } from 'class-validator';
+import { Tone, AssetType } from '@app/types';
 
 export class CreateBrandProfileDto {
   @IsString()
   name: string;
 
   @IsEnum(['professional', 'casual', 'humorous', 'inspirational'])
-  tone: string;
+  tone: Tone;
 
   @IsString()
   primaryColor: string;
@@ -39,7 +40,7 @@ export class UpdateBrandProfileDto {
 
   @IsOptional()
   @IsEnum(['professional', 'casual', 'humorous', 'inspirational'])
-  tone?: string;
+  tone?: Tone;
 
   @IsOptional()
   @IsString()
@@ -64,7 +65,7 @@ export class UpdateBrandProfileDto {
 
 export class GetUploadUrlDto {
   @IsEnum(['clip', 'image', 'audio'])
-  type: string;
+  type: AssetType;
 }
 
 export class ConfirmAssetDto {
@@ -75,7 +76,7 @@ export class ConfirmAssetDto {
   filename: string;
 
   @IsEnum(['clip', 'image', 'audio'])
-  type: string;
+  type: AssetType;
 
   @IsString()
   mimeType: string;

@@ -68,9 +68,15 @@ export class ReelEncoder {
       // Draw caption text if present
       if (segment.caption) {
         const escapedCaption = segment.caption
-          .replace(/\\/g, '\\\\')
+          .replace(/\\/g, '\\\\\\\\')
           .replace(/'/g, "'\\\\\\''")
-          .replace(/:/g, '\\:');
+          .replace(/:/g, '\\\\:')
+          .replace(/;/g, '\\\\;')
+          .replace(/\[/g, '\\\\[')
+          .replace(/\]/g, '\\\\]')
+          .replace(/%/g, '%%')
+          .replace(/\n/g, ' ')
+          .replace(/\r/g, '');
         const captionLabel = `[v${i}cap]`;
         filterChain.push(
           `${currentLabel}drawtext=text='${escapedCaption}':` +

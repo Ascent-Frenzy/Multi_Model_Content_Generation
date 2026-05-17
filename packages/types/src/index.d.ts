@@ -4,6 +4,7 @@ export type AssetType = 'clip' | 'image' | 'audio';
 export type Tone = 'professional' | 'casual' | 'humorous' | 'inspirational';
 export type Platform = 'instagram';
 export type PostStatus = 'agent_queued' | 'awaiting_approval' | 'approved' | 'posting' | 'posted' | 'failed';
+export type QueueName = 'render' | 'social';
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 export type SegmentType = 'clip' | 'flux_image' | 'static_image';
 export interface CarouselSlide {
@@ -15,6 +16,7 @@ export interface CarouselSlide {
     overlayImageS3Key?: string;
     textColor: string;
 }
+/** Persisted shape (DB JSON column) — uses absolute timeline positions. */
 export interface ReelSegmentDB {
     order: number;
     type: SegmentType;
@@ -24,6 +26,7 @@ export interface ReelSegmentDB {
     endSec: number;
     caption?: string;
 }
+/** Job-payload shape — backend converts DB rows before dispatching to BullMQ. */
 export interface ReelSegment {
     order: number;
     type: SegmentType;
