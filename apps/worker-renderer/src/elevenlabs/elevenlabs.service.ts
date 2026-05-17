@@ -17,7 +17,7 @@ export class ElevenLabsService {
   async generateSpeech(text: string, voiceId: string): Promise<Buffer> {
     const audioStream = await this.client.textToSpeech.convert(voiceId, {
       text,
-      model_id: 'eleven_monolingual_v1',
+      model_id: 'eleven_turbo_v2_5',
       output_format: 'mp3_44100_128',
     });
 

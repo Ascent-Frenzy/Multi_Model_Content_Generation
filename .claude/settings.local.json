@@ -9,7 +9,9 @@
       "Bash(npx tsc *)",
       "Bash(echo \"exit: $?\")",
       "Bash(Get-ChildItem \"c:\\\\Users\\\\syedf\\\\WORK\\\\Multi_Model_Content_Generation\\\\apps\\\\backend\\\\dist\" -Name)",
-      "Bash(aws --version)"
+      "Bash(aws --version)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"const {fal} = require\\('./node_modules/@fal-ai/client'\\); console.log\\(typeof fal.subscribe, typeof fal.config\\)\")"
     ]
   }
 }
