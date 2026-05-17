@@ -1,18 +1,18 @@
 import { apiClient } from './client';
-import type { ContentType, ContentStatus, CarouselSlide, ReelSegment } from '@app/types';
+import type { ContentType, ContentStatus, CarouselSlide, ReelSegmentDB } from '@app/types';
 
 export interface ContentItem {
   id: string; userId: string; brandProfileId: string; type: ContentType; title: string;
   topic: string; status: ContentStatus; script: string | null; thumbnailS3Key: string | null;
   renderedS3Key: string | null; createdAt: string; updatedAt: string;
   carouselDetail?: { id: string; slideCount: number; slides: CarouselSlide[] };
-  reelDetail?: { id: string; voiceoverS3Key: string | null; durationSecs: number | null; segments: ReelSegment[] };
+  reelDetail?: { id: string; voiceoverS3Key: string | null; durationSecs: number | null; segments: ReelSegmentDB[] };
 }
 
 export interface UpdateContentInput {
   script?: string;
   slides?: CarouselSlide[];
-  segments?: ReelSegment[];
+  segments?: ReelSegmentDB[];
 }
 
 export async function getContentItems(): Promise<ContentItem[]> {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBrands, useCreateReel, useApproveEditedContent } from '@/lib/api/hooks';
-import type { ReelSegment } from '@app/types';
+import type { ReelSegmentDB } from '@app/types';
 import type { ContentItem } from '@/lib/api/content';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,7 +30,7 @@ export default function CreateReelPage() {
   const [brandProfileId, setBrandProfileId] = useState('');
   const [contentItem, setContentItem] = useState<ContentItem | null>(null);
   const [editedScript, setEditedScript] = useState('');
-  const [editedSegments, setEditedSegments] = useState<ReelSegment[]>([]);
+  const [editedSegments, setEditedSegments] = useState<ReelSegmentDB[]>([]);
 
   const handleGenerate = () => {
     createReel.mutate(
@@ -55,7 +55,7 @@ export default function CreateReelPage() {
     router.push(`/editor/${contentItem.id}`);
   };
 
-  const handleSegmentChange = (index: number, field: keyof ReelSegment, value: string) => {
+  const handleSegmentChange = (index: number, field: keyof ReelSegmentDB, value: string) => {
     setEditedSegments((prev) =>
       prev.map((seg, i) =>
         i === index ? { ...seg, [field]: value } : seg
@@ -187,7 +187,7 @@ export default function CreateReelPage() {
                       {segment.type}
                     </Badge>
                     <span className="text-xs text-secondary-text">
-                      {segment.durationSecs.toFixed(1)}s
+                      {(segment.endSec - segment.startSec).toFixed(1)}s
                     </span>
                   </div>
 

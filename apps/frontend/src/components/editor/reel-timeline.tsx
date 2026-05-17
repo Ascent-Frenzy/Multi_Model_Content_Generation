@@ -2,28 +2,28 @@
 
 import { useState } from 'react';
 import { useUpdateContent, useBrandAssets } from '@/lib/api/hooks';
-import type { ReelSegment } from '@app/types';
+import type { ReelSegmentDB } from '@app/types';
 import { ReelSegmentCard } from './reel-segment-card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Clock } from 'lucide-react';
 
 interface ReelTimelineProps {
-  segments: ReelSegment[];
+  segments: ReelSegmentDB[];
   contentId: string;
   brandProfileId?: string;
 }
 
 export function ReelTimeline({ segments, contentId, brandProfileId }: ReelTimelineProps) {
-  const [editedSegments, setEditedSegments] = useState<ReelSegment[]>(segments);
+  const [editedSegments, setEditedSegments] = useState<ReelSegmentDB[]>(segments);
   const updateContent = useUpdateContent();
   const { data: brandAssets } = useBrandAssets(brandProfileId ?? '');
 
   const totalDuration = editedSegments.reduce(
-    (sum, seg) => sum + seg.durationSecs,
+    (sum, seg) => sum + (seg.endSec - seg.startSec),
     0
   );
 
-  const handleSegmentChange = (index: number, updated: ReelSegment) => {
+  const handleSegmentChange = (index: number, updated: ReelSegmentDB) => {
     setEditedSegments((prev) =>
       prev.map((s, i) => (i === index ? updated : s))
     );

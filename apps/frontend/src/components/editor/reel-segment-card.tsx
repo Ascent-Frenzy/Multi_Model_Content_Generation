@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReelSegment } from '@app/types';
+import type { ReelSegmentDB } from '@app/types';
 import type { BrandAsset } from '@/lib/api/brands';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,9 @@ import {
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface ReelSegmentCardProps {
-  segment: ReelSegment;
+  segment: ReelSegmentDB;
   index: number;
-  onChange: (updated: ReelSegment) => void;
+  onChange: (updated: ReelSegmentDB) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   isFirst: boolean;
@@ -37,7 +37,7 @@ export function ReelSegmentCard({
   isLast,
   brandAssets,
 }: ReelSegmentCardProps) {
-  const duration = segment.durationSecs;
+  const duration = segment.endSec - segment.startSec;
 
   // Filter assets by type for clip/asset selection
   const filteredAssets = brandAssets?.filter((asset) => {
