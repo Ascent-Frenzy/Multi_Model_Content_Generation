@@ -37,7 +37,7 @@ export function ReelSegmentCard({
   isLast,
   brandAssets,
 }: ReelSegmentCardProps) {
-  const duration = segment.endSec - segment.startSec;
+  const duration = segment.durationSecs;
 
   // Filter assets by type for clip/asset selection
   const filteredAssets = brandAssets?.filter((asset) => {

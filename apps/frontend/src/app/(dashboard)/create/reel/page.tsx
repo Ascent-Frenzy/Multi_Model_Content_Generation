@@ -187,7 +187,7 @@ export default function CreateReelPage() {
                       {segment.type}
                     </Badge>
                     <span className="text-xs text-secondary-text">
-                      {(segment.endSec - segment.startSec).toFixed(1)}s
+                      {segment.durationSecs.toFixed(1)}s
                     </span>
                   </div>
 

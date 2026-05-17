@@ -19,7 +19,7 @@ export function ReelTimeline({ segments, contentId, brandProfileId }: ReelTimeli
   const { data: brandAssets } = useBrandAssets(brandProfileId ?? '');
 
   const totalDuration = editedSegments.reduce(
-    (sum, seg) => sum + (seg.endSec - seg.startSec),
+    (sum, seg) => sum + seg.durationSecs,
     0
   );
 
