@@ -16,7 +16,6 @@ export default function DashboardLayout({
   const hydrated = useAuthStore((s) => s.hydrated);
   const router = useRouter();
 
-  // Initialize WebSocket connection
   useSocket();
 
   useEffect(() => {
@@ -25,7 +24,6 @@ export default function DashboardLayout({
     }
   }, [hydrated, token, router]);
 
-  // Show loading until store is hydrated
   if (!hydrated) {
     return (
       <div className="flex h-screen items-center justify-center bg-canvas-black">
@@ -34,10 +32,7 @@ export default function DashboardLayout({
     );
   }
 
-  // If hydrated but no token, show nothing (redirect will happen)
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   return (
     <div className="flex h-screen bg-canvas-black">

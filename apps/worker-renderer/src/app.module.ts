@@ -1,4 +1,5 @@
 import { Module, Controller, Get } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { RedisModule } from './shared/redis/redis.module';
@@ -22,6 +23,7 @@ export class HealthController {
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     BullModule.forRoot({
       connection: {
         host: redisUrl.hostname,

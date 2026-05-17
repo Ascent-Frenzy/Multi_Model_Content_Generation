@@ -8,7 +8,8 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(echo \"exit: $?\")",
-      "Bash(Get-ChildItem \"c:\\\\Users\\\\syedf\\\\WORK\\\\Multi_Model_Content_Generation\\\\apps\\\\backend\\\\dist\" -Name)"
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\syedf\\\\WORK\\\\Multi_Model_Content_Generation\\\\apps\\\\backend\\\\dist\" -Name)",
+      "Bash(aws --version)"
     ]
   }
 }

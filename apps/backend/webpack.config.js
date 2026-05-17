@@ -6,6 +6,11 @@ module.exports = (options) => ({
   // Keep node_modules external — prevents webpack from bundling native binaries
   // (bcrypt, sharp, etc.) which break under webpack's static analysis.
   externals: [
-    nodeExternals({ modulesDir: path.resolve(__dirname, '../../node_modules') }),
+    nodeExternals({
+      modulesDir: path.resolve(__dirname, '../../node_modules'),
+      // @app/* packages are TypeScript source — bundle them instead of
+      // leaving them external (external = Node tries to require .ts at runtime).
+      allowlist: [/^@app\//],
+    }),
   ],
 });

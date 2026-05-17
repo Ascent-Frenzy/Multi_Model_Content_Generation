@@ -3,12 +3,15 @@ import { ElevenLabsClient } from 'elevenlabs';
 
 @Injectable()
 export class ElevenLabsService {
-  private readonly client: ElevenLabsClient;
+  private _client: ElevenLabsClient | null = null;
 
-  constructor() {
-    this.client = new ElevenLabsClient({
-      apiKey: process.env.ELEVENLABS_API_KEY,
-    });
+  private get client(): ElevenLabsClient {
+    if (!this._client) {
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      if (!apiKey) throw new Error('ELEVENLABS_API_KEY is not set');
+      this._client = new ElevenLabsClient({ apiKey });
+    }
+    return this._client;
   }
 
   async generateSpeech(text: string, voiceId: string): Promise<Buffer> {

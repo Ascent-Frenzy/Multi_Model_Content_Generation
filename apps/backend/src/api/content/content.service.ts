@@ -14,6 +14,11 @@ import { CreateCarouselDto, CreateReelDto, UpdateContentDto } from '@app/dtos';
 import { RENDER_QUEUE, SOCIAL_QUEUE, JOB_TYPE, DIMENSIONS } from '@app/constants';
 import { CarouselSlide, ReelSegmentDB, ReelSegment } from '@app/types';
 
+function extractJson(raw: string): string {
+  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  return match ? match[1].trim() : raw.trim();
+}
+
 @Injectable()
 export class ContentService {
   private readonly anthropic: Anthropic;
@@ -104,7 +109,7 @@ Return ONLY valid JSON, no markdown or explanation.`,
 
       let parsed: { slides: CarouselSlide[] };
       try {
-        parsed = JSON.parse(textBlock.text);
+        parsed = JSON.parse(extractJson(textBlock.text));
       } catch {
         // Set status to failed if Claude returns invalid JSON
         await this.prisma.contentItem.update({
@@ -213,7 +218,7 @@ Return ONLY valid JSON, no markdown or explanation.`,
 
       let parsed: { script: string; segments: ReelSegmentDB[] };
       try {
-        parsed = JSON.parse(textBlock.text);
+        parsed = JSON.parse(extractJson(textBlock.text));
       } catch {
         await this.prisma.contentItem.update({
           where: { id: contentItem.id },
