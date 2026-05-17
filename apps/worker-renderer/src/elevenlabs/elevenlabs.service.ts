@@ -21,6 +21,9 @@ export class ElevenLabsService {
       output_format: 'mp3_44100_128',
     });
 
+    // Buffer approach is acceptable for v1: ElevenLabs limits single requests
+    // to ~5000 chars which produces ~2-3 MB of audio. If longer content is
+    // needed in the future, switch to streaming directly to a temp file.
     const chunks: Buffer[] = [];
     for await (const chunk of audioStream) {
       chunks.push(Buffer.from(chunk));

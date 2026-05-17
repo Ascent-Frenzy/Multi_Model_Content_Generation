@@ -38,6 +38,7 @@ describe('RenderJobHelper', () => {
     helper = new RenderJobHelper(
       prisma as any,
       redis as any,
+      'test-user-id',
       contentItemId,
       jobType,
     );
@@ -51,7 +52,7 @@ describe('RenderJobHelper', () => {
     it('should emit progress via Redis and update DB', async () => {
       await helper.progress(50, 'Halfway');
 
-      expect(redis.emitProgress).toHaveBeenCalledWith(contentItemId, 50, 'Halfway');
+      expect(redis.emitProgress).toHaveBeenCalledWith('test-user-id', contentItemId, 50, 'Halfway');
       expect(prisma.renderJob.updateMany).toHaveBeenCalledWith({
         where: { contentItemId, jobType },
         data: { progress: 50 },
@@ -72,7 +73,7 @@ describe('RenderJobHelper', () => {
     it('should emit complete, update ContentItem, and update RenderJob', async () => {
       await helper.complete('render-key', 'thumb-key');
 
-      expect(redis.emitComplete).toHaveBeenCalledWith(contentItemId, 'render-key', 'thumb-key');
+      expect(redis.emitComplete).toHaveBeenCalledWith('test-user-id', contentItemId, 'render-key', 'thumb-key');
       expect(prisma.contentItem.update).toHaveBeenCalledWith({
         where: { id: contentItemId },
         data: { renderedS3Key: 'render-key', thumbnailS3Key: 'thumb-key', status: 'ready' },
@@ -88,7 +89,7 @@ describe('RenderJobHelper', () => {
     it('should emit failed event and update DB to failed', async () => {
       await helper.fail(new Error('boom'));
 
-      expect(redis.emitFailed).toHaveBeenCalledWith(contentItemId, 'boom');
+      expect(redis.emitFailed).toHaveBeenCalledWith('test-user-id', contentItemId, 'boom');
       expect(prisma.renderJob.updateMany).toHaveBeenCalledWith({
         where: { contentItemId, jobType },
         data: { status: 'failed', error: 'boom' },
@@ -157,7 +158,7 @@ describe('RenderJobHelper', () => {
         }),
       ).rejects.toThrow('fn exploded');
 
-      expect(redis.emitFailed).toHaveBeenCalledWith(contentItemId, 'fn exploded');
+      expect(redis.emitFailed).toHaveBeenCalledWith('test-user-id', contentItemId, 'fn exploded');
       expect(fs.rm).toHaveBeenCalled();
     });
 

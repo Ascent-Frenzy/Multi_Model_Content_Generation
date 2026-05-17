@@ -37,12 +37,12 @@ export class InstagramProcessor extends WorkerHost {
       encryptedAccessToken,
     } = job.data;
 
-    const accessToken = this.decryptToken(encryptedAccessToken);
-
     const tmpDir = `/tmp/${contentItemId}`;
     await fs.mkdir(tmpDir, { recursive: true });
 
     try {
+      const accessToken = this.decryptToken(encryptedAccessToken);
+
       await this.prisma.scheduledPost.update({
         where: { id: scheduledPostId },
         data: { status: 'posting' },
@@ -104,7 +104,16 @@ export class InstagramProcessor extends WorkerHost {
   private decryptToken(ciphertext: string): string {
     const encryptionKey = process.env.ENCRYPTION_KEY;
     if (!encryptionKey) throw new Error('ENCRYPTION_KEY is not set');
+
+    if (!ciphertext || !ciphertext.includes(':')) {
+      throw new Error('Malformed encrypted token — expected format "iv:ciphertext"');
+    }
+
     const [ivHex, encrypted] = ciphertext.split(':');
+    if (!ivHex || !encrypted) {
+      throw new Error('Malformed encrypted token — missing IV or ciphertext');
+    }
+
     const key = Buffer.from(encryptionKey, 'hex');
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = createDecipheriv('aes-256-cbc', key, iv);

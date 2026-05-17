@@ -31,6 +31,7 @@ export default function CreateReelPage() {
   const [contentItem, setContentItem] = useState<ContentItem | null>(null);
   const [editedScript, setEditedScript] = useState('');
   const [editedSegments, setEditedSegments] = useState<ReelSegmentDB[]>([]);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const handleGenerate = () => {
     createReel.mutate(
@@ -48,11 +49,16 @@ export default function CreateReelPage() {
 
   const handleApproveAndRender = async () => {
     if (!contentItem) return;
-    await approve(contentItem.id, {
-      script: editedScript,
-      segments: editedSegments,
-    });
-    router.push(`/editor/${contentItem.id}`);
+    setApproveError(null);
+    try {
+      await approve(contentItem.id, {
+        script: editedScript,
+        segments: editedSegments,
+      });
+      router.push(`/editor/${contentItem.id}`);
+    } catch (error) {
+      setApproveError(getErrorMessage(error, 'Failed to approve and render'));
+    }
   };
 
   const handleSegmentChange = (index: number, field: keyof ReelSegmentDB, value: string) => {
@@ -224,6 +230,12 @@ export default function CreateReelPage() {
               </>
             )}
           </Button>
+
+          {approveError && (
+            <p className="text-sm text-ultraviolet">
+              {approveError}
+            </p>
+          )}
         </div>
       )}
     </div>

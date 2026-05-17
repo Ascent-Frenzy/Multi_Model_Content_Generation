@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LIMITS = exports.DIMENSIONS = exports.REDIS_CHANNELS = exports.POST_STATUS = exports.CONTENT_STATUS = exports.JOB_TYPE = exports.SOCIAL_QUEUE = exports.RENDER_QUEUE = void 0;
+// Queue names — import these everywhere, never hardcode strings
 exports.RENDER_QUEUE = 'render-queue';
 exports.SOCIAL_QUEUE = 'social-queue';
+// Job types
 exports.JOB_TYPE = {
     CAROUSEL_RENDER: 'carousel_render',
     REEL_RENDER: 'reel_render',
     INSTAGRAM_POST: 'instagram_post',
 };
+// Content status lifecycle
 exports.CONTENT_STATUS = {
     DRAFT: 'draft',
     SCRIPT_PENDING: 'script_pending',
@@ -25,16 +28,18 @@ exports.POST_STATUS = {
     POSTED: 'posted',
     FAILED: 'failed',
 };
+// Redis channels
 exports.REDIS_CHANNELS = {
     RENDER_EVENTS: 'render:events',
 };
+// Output dimensions
 exports.DIMENSIONS = {
     CAROUSEL: { width: 1080, height: 1080 },
     REEL: { width: 1080, height: 1920 },
 };
+// Limits
 exports.LIMITS = {
     MAX_CAROUSEL_SLIDES: 10,
     MAX_REEL_DURATION_SECS: 90,
-    MAX_UPLOAD_SIZE_BYTES: 500 * 1024 * 1024,
+    MAX_UPLOAD_SIZE_BYTES: 500 * 1024 * 1024, // 500MB
 };
-//# sourceMappingURL=index.js.map

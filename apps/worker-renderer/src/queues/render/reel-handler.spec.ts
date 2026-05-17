@@ -57,6 +57,7 @@ describe('ReelHandler', () => {
 
   const mockJobData: ReelRenderJob = {
     jobType: 'reel_render',
+    userId: 'test-user-id',
     contentItemId: 'test-reel-id',
     brandProfileId: 'brand-1',
     script: 'This is the voiceover script.',
@@ -301,6 +302,7 @@ describe('ReelHandler', () => {
     await expect(handler.handle(job)).rejects.toThrow('FFmpeg crashed');
 
     expect(redis.emitFailed).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       'FFmpeg crashed',
     );
@@ -356,26 +358,31 @@ describe('ReelHandler', () => {
     await handler.handle(job);
 
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       5,
       'Job started',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       40,
       'Voiceover generated',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       70,
       'All assets generated and downloaded',
     );
     expect(redis.emitProgress).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       90,
       'Encoding complete',
     );
     expect(redis.emitComplete).toHaveBeenCalledWith(
+      'test-user-id',
       'test-reel-id',
       'assets/test-reel-id/reel.mp4',
       'assets/test-reel-id/thumbnail.jpg',

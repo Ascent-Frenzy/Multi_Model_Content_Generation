@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "rootDir": "../..",
     "outDir": "./dist",
     "declaration": true,
     "removeComments": true,
@@ -12,6 +13,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/types/src/**/*", "../../packages/constants/src/**/*", "../../packages/dtos/src/**/*"],
   "exclude": ["node_modules", "dist", "test"]
 }

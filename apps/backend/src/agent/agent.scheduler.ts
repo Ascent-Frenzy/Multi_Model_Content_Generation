@@ -60,6 +60,19 @@ export class AgentScheduler {
         await this.agentService.getSchedulingDecisions(userId);
 
       for (const decision of decisions) {
+        // Validate decision fields
+        if (!decision.contentItemId || !decision.scheduledAt || !decision.caption) {
+          this.logger.warn('Agent returned incomplete scheduling decision, skipping');
+          continue;
+        }
+
+        // Validate scheduledAt is in the future
+        const scheduledAt = new Date(decision.scheduledAt);
+        if (isNaN(scheduledAt.getTime()) || scheduledAt <= new Date()) {
+          this.logger.warn(`Agent suggested past/invalid date: ${decision.scheduledAt}, skipping`);
+          continue;
+        }
+
         // Verify the content item exists and belongs to this user
         const contentItem = await this.prisma.contentItem.findFirst({
           where: { id: decision.contentItemId, userId },
@@ -72,13 +85,26 @@ export class AgentScheduler {
           continue;
         }
 
+        // Prevent duplicates: check if an active scheduled post already exists
+        const existing = await this.prisma.scheduledPost.findFirst({
+          where: {
+            contentItemId: decision.contentItemId,
+            platform: 'instagram',
+            status: { notIn: ['failed', 'posted'] },
+          },
+        });
+        if (existing) {
+          this.logger.debug(`Skipping duplicate schedule for content ${decision.contentItemId}`);
+          continue;
+        }
+
         // Create the scheduled post
         const scheduledPost = await this.prisma.scheduledPost.create({
           data: {
             contentItemId: decision.contentItemId,
             userId,
             platform: 'instagram',
-            scheduledAt: new Date(decision.scheduledAt),
+            scheduledAt,
             status: 'awaiting_approval',
             caption: decision.caption,
             agentReasoning: decision.reasoning,

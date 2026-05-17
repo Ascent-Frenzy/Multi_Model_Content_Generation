@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const logger = new Logger('WorkerRenderer');
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
   const port = process.env.PORT || 4001;
   await app.listen(port);
   logger.log(`Worker-Renderer listening on port ${port} (health/admin only)`);

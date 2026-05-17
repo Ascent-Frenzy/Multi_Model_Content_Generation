@@ -15,7 +15,7 @@ export class CarouselEncoder {
     for (const slidePath of slidePaths) {
       command
         .input(slidePath)
-        .inputOptions(['-loop', '1', '-t', String(slideDurationSecs)]);
+        .inputOptions(['-framerate', '30', '-loop', '1', '-t', String(slideDurationSecs)]);
     }
 
     const filterInputs = slidePaths.map((_, i) => `[${i}:v]`).join('');
@@ -27,6 +27,7 @@ export class CarouselEncoder {
         '-map', '[outv]',
         '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
+        '-r', '30',
         '-movflags', '+faststart',
       ])
       .output(outputPath);

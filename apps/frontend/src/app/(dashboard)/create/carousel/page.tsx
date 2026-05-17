@@ -30,6 +30,7 @@ export default function CreateCarouselPage() {
   const [brandProfileId, setBrandProfileId] = useState('');
   const [contentItem, setContentItem] = useState<ContentItem | null>(null);
   const [editedSlides, setEditedSlides] = useState<CarouselSlide[]>([]);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const handleGenerate = () => {
     createCarousel.mutate(
@@ -46,8 +47,13 @@ export default function CreateCarouselPage() {
 
   const handleApproveAndRender = async () => {
     if (!contentItem) return;
-    await approve(contentItem.id, { slides: editedSlides });
-    router.push(`/editor/${contentItem.id}`);
+    setApproveError(null);
+    try {
+      await approve(contentItem.id, { slides: editedSlides });
+      router.push(`/editor/${contentItem.id}`);
+    } catch (error) {
+      setApproveError(getErrorMessage(error, 'Failed to approve and render'));
+    }
   };
 
   const handleSlideChange = (index: number, field: keyof CarouselSlide, value: string) => {
@@ -225,6 +231,12 @@ export default function CreateCarouselPage() {
               </>
             )}
           </Button>
+
+          {approveError && (
+            <p className="text-sm text-ultraviolet">
+              {approveError}
+            </p>
+          )}
         </div>
       )}
     </div>

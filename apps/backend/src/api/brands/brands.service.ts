@@ -81,6 +81,14 @@ export class BrandsService {
 
   async delete(id: string, userId: string) {
     await this.findById(id, userId);
+
+    // Delete child assets first (S3 cleanup is best-effort)
+    const assets = await this.prisma.brandAsset.findMany({ where: { brandProfileId: id } });
+    for (const asset of assets) {
+      try { await this.s3.deleteObject(asset.s3Key); } catch {}
+    }
+    await this.prisma.brandAsset.deleteMany({ where: { brandProfileId: id } });
+
     await this.prisma.brandProfile.delete({ where: { id } });
     return { deleted: true };
   }

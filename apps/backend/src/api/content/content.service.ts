@@ -10,8 +10,9 @@ import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { S3Service } from '../../shared/s3/s3.service';
 import { CreateCarouselDto, CreateReelDto, UpdateContentDto } from '@app/dtos';
-import { RENDER_QUEUE, SOCIAL_QUEUE, JOB_TYPE, DIMENSIONS } from '@app/constants';
+import { RENDER_QUEUE, JOB_TYPE, DIMENSIONS } from '@app/constants';
 import { CarouselSlide, ReelSegmentDB, ReelSegment } from '@app/types';
 
 function extractJson(raw: string): string {
@@ -26,6 +27,7 @@ export class ContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly s3: S3Service,
     @InjectQueue(RENDER_QUEUE) private readonly renderQueue: Queue,
   ) {
     this.anthropic = new Anthropic({
@@ -284,12 +286,12 @@ Return ONLY valid JSON, no markdown or explanation.`,
   async update(id: string, userId: string, dto: UpdateContentDto) {
     const item = await this.findById(id, userId);
 
-    if (dto.title || dto.script) {
+    if (dto.title !== undefined || dto.script !== undefined) {
       await this.prisma.contentItem.update({
         where: { id },
         data: {
-          ...(dto.title && { title: dto.title }),
-          ...(dto.script && { script: dto.script }),
+          ...(dto.title !== undefined && { title: dto.title }),
+          ...(dto.script !== undefined && { script: dto.script }),
         },
       });
     }
@@ -316,19 +318,36 @@ Return ONLY valid JSON, no markdown or explanation.`,
 
   /** Approve script and dispatch render job */
   async approveScript(id: string, userId: string) {
+    // Verify ownership
     const item = await this.findById(id, userId);
 
-    if (item.status !== 'script_pending') {
+    // Atomic status transition: only succeeds if status is still script_pending
+    const updated = await this.prisma.contentItem.updateMany({
+      where: { id, status: 'script_pending' },
+      data: { status: 'script_approved' },
+    });
+
+    if (updated.count === 0) {
       throw new BadRequestException(
         `Cannot approve script in status: ${item.status}`,
       );
     }
 
-    // Update status to script_approved
-    await this.prisma.contentItem.update({
-      where: { id },
-      data: { status: 'script_approved' },
-    });
+    // Guard: if no detail exists, fail gracefully instead of silently skipping
+    if (item.type === 'carousel' && !item.carouselDetail) {
+      await this.prisma.contentItem.update({
+        where: { id },
+        data: { status: 'failed' },
+      });
+      throw new BadRequestException('Carousel has no slide data — cannot render');
+    }
+    if (item.type === 'reel' && !item.reelDetail) {
+      await this.prisma.contentItem.update({
+        where: { id },
+        data: { status: 'failed' },
+      });
+      throw new BadRequestException('Reel has no segment data — cannot render');
+    }
 
     // Dispatch render job
     if (item.type === 'carousel' && item.carouselDetail) {
@@ -412,7 +431,26 @@ Return ONLY valid JSON, no markdown or explanation.`,
   }
 
   async delete(id: string, userId: string) {
-    await this.findById(id, userId);
+    const item = await this.findById(id, userId);
+
+    // Clean up S3 assets (best-effort)
+    if (item.renderedS3Key) {
+      try { await this.s3.deleteObject(item.renderedS3Key); } catch {}
+    }
+    if (item.thumbnailS3Key) {
+      try { await this.s3.deleteObject(item.thumbnailS3Key); } catch {}
+    }
+
+    // Delete children first
+    await this.prisma.renderJob.deleteMany({ where: { contentItemId: id } });
+    await this.prisma.scheduledPost.deleteMany({ where: { contentItemId: id } });
+    if (item.carouselDetail) {
+      await this.prisma.carouselDetail.delete({ where: { contentItemId: id } });
+    }
+    if (item.reelDetail) {
+      await this.prisma.reelDetail.delete({ where: { contentItemId: id } });
+    }
+
     await this.prisma.contentItem.delete({ where: { id } });
     return { deleted: true };
   }
