@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+.env.*.local
+
+# Nx
+.nx/cache
+.nx/workspace-data
+
+# Superpowers visual companion
+.superpowers/
+
+# Temp render files
+tmp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

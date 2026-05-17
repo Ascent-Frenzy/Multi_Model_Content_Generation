@@ -1,0 +1,25 @@
+{
+  "name": "multi-model-content-generation",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "frontend": "nx serve frontend",
+    "backend": "nx serve backend",
+    "worker": "nx serve worker-renderer",
+    "dev": "concurrently \"npm run backend\" \"npm run worker\" \"npm run frontend\"",
+    "db:migrate": "nx run backend:db:migrate",
+    "db:generate": "nx run backend:db:generate"
+  },
+  "devDependencies": {
+    "@nx/js": "^19",
+    "@nx/next": "^19",
+    "@nx/nest": "^19",
+    "nx": "^19",
+    "typescript": "^5",
+    "concurrently": "^8"
+  }
+}
