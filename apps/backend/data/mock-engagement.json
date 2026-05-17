@@ -1,0 +1,76 @@
+{
+  "scrapedAt": "2026-05-17T12:00:00Z",
+  "source": "apify-instagram-scraper",
+  "account": {
+    "username": "demo_brand",
+    "followers": 12500,
+    "following": 850,
+    "postsCount": 234
+  },
+  "bestPostingHours": [9, 12, 17, 20],
+  "bestPostingDays": ["tuesday", "thursday", "saturday"],
+  "avgEngagementRate": 0.045,
+  "topPerformingTypes": ["carousel", "reel"],
+  "recentPosts": [
+    {
+      "id": "post_001",
+      "type": "carousel",
+      "postedAt": "2026-05-15T09:00:00Z",
+      "likes": 342,
+      "comments": 28,
+      "shares": 15,
+      "saves": 67,
+      "engagementRate": 0.036,
+      "caption": "5 tips for better productivity",
+      "hashtags": ["#productivity", "#tips", "#growth"]
+    },
+    {
+      "id": "post_002",
+      "type": "reel",
+      "postedAt": "2026-05-14T17:30:00Z",
+      "likes": 1205,
+      "comments": 89,
+      "shares": 156,
+      "saves": 234,
+      "engagementRate": 0.135,
+      "caption": "Behind the scenes of our creative process",
+      "hashtags": ["#bts", "#creative", "#process"]
+    },
+    {
+      "id": "post_003",
+      "type": "carousel",
+      "postedAt": "2026-05-12T12:00:00Z",
+      "likes": 567,
+      "comments": 45,
+      "shares": 32,
+      "saves": 89,
+      "engagementRate": 0.059,
+      "caption": "The ultimate guide to brand consistency",
+      "hashtags": ["#branding", "#design", "#consistency"]
+    },
+    {
+      "id": "post_004",
+      "type": "reel",
+      "postedAt": "2026-05-10T20:00:00Z",
+      "likes": 890,
+      "comments": 67,
+      "shares": 98,
+      "saves": 178,
+      "engagementRate": 0.099,
+      "caption": "Quick tutorial: color theory basics",
+      "hashtags": ["#colortheory", "#design", "#tutorial"]
+    }
+  ],
+  "audienceInsights": {
+    "topLocations": ["United States", "United Kingdom", "Canada"],
+    "ageRange": "25-34",
+    "genderSplit": { "male": 0.42, "female": 0.55, "other": 0.03 },
+    "peakActivityHours": [8, 9, 12, 13, 17, 18, 20, 21]
+  },
+  "hashtagPerformance": [
+    { "hashtag": "#productivity", "avgReach": 4500, "avgEngagement": 0.042 },
+    { "hashtag": "#design", "avgReach": 6200, "avgEngagement": 0.051 },
+    { "hashtag": "#tutorial", "avgReach": 8100, "avgEngagement": 0.068 },
+    { "hashtag": "#branding", "avgReach": 3800, "avgEngagement": 0.039 }
+  ]
+}
